@@ -1,0 +1,36 @@
+import os
+import whisper
+from moviepy.editor import VideoFileClip
+
+def extract_audio_from_video(video_path, audio_path):
+    try:
+        video = VideoFileClip(video_path)
+        video.audio.write_audiofile(audio_path, verbose=False, logger=None)
+        return True
+    except Exception as e:
+        print(f"Error extracting audio: {e}")
+        return False
+
+def convert_media(file_path, is_video=False):
+    try:
+        target_audio_path = file_path
+        if is_video:
+            target_audio_path = file_path + ".temp.wav"
+            success = extract_audio_from_video(file_path, target_audio_path)
+            if not success:
+                return "Failed to extract audio from video."
+
+        # Load whisper model (base model is fast and free)
+        model = whisper.load_model("base")
+        result = model.transcribe(target_audio_path)
+        
+        # Cleanup temp audio if we created one
+        if is_video and os.path.exists(target_audio_path):
+            os.remove(target_audio_path)
+
+        text = result.get('text', '').strip()
+        if not text:
+            return "*No speech detected in media.*"
+        return text
+    except Exception as e:
+        return f"Error transcribing media: {str(e)}"
