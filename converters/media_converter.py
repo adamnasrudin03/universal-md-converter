@@ -3,13 +3,23 @@ import whisper
 from moviepy.editor import VideoFileClip
 
 def extract_audio_from_video(video_path, audio_path):
+    video = None
     try:
         video = VideoFileClip(video_path)
+        if video.audio is None:
+            print("No audio track found in video.")
+            return False
         video.audio.write_audiofile(audio_path, verbose=False, logger=None)
         return True
     except Exception as e:
         print(f"Error extracting audio: {e}")
         return False
+    finally:
+        if video is not None:
+            try:
+                video.close()
+            except Exception:
+                pass
 
 def convert_media(file_path, is_video=False):
     try:
