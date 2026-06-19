@@ -3,6 +3,16 @@ import re
 import argparse
 import json
 
+def _safe_truncate(text, max_chars):
+    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars]
+    last_space = truncated.rfind(' ')
+    if last_space > max_chars * 0.8:
+        return truncated[:last_space]
+    return truncated
+
 try:
     import ollama
     OLLAMA_AVAILABLE = True
@@ -71,14 +81,19 @@ Format jawaban HANYA berupa JSON valid:
 }}
 
 Dokumen untuk dievaluasi:
-{content[:3000]}
+{_safe_truncate(content, 3000)}
 """
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
         ], format='json')
         
-        response_text = response.get('message', {}).get('content', '')
+        # Handle both dict and object-style responses from ollama-python
+        if isinstance(response, dict):
+            response_text = response.get('message', {}).get('content', '')
+        else:
+            msg = getattr(response, 'message', None)
+            response_text = getattr(msg, 'content', '') if msg else ''
         try:
             parsed_json = json.loads(response_text)
         except json.JSONDecodeError:
@@ -92,8 +107,14 @@ Dokumen untuk dievaluasi:
                 return 0, "ERROR", ["LLM Validation failed: Valid JSON not found in LLM response"]
         
         score = parsed_json.get("score", 0)
+        # Clamp score to valid range and validate status
+        score = min(100, max(0, score))
         status = parsed_json.get("status", "NEEDS RECONVERT")
+        if status not in ("OK", "NEEDS RECONVERT", "ERROR"):
+            status = "OK" if score >= 80 else "NEEDS RECONVERT"
         feedback = parsed_json.get("feedback", [])
+        if not isinstance(feedback, list):
+            feedback = [str(feedback)]
         
         return score, status, feedback
     except Exception as e:

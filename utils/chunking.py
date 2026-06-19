@@ -2,10 +2,26 @@ import re
 import json
 import ollama
 
+def _safe_truncate(text, max_chars):
+    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
+    if len(text) <= max_chars:
+        return text
+    # Encode to UTF-8, truncate bytes, then decode safely
+    truncated = text[:max_chars]
+    # Find the last space within the truncated text to avoid mid-word cuts
+    last_space = truncated.rfind(' ')
+    if last_space > max_chars * 0.8:  # Only use space-break if it's not too far back
+        return truncated[:last_space]
+    return truncated
+
 def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
     """
     Split text into chunks, then use Ollama to format the text specifically for Trading RAG.
     """
+    # Guard: check for empty text BEFORE chunking to avoid wasteful processing
+    if not text or not text.strip():
+        return []
+    
     lines = text.splitlines(keepends=True)
     chunks = []
     current_chunk = ""
@@ -24,9 +40,6 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             
     if current_chunk:
         chunks.append(current_chunk)
-        
-    if not text or not text.strip():
-        return []
         
     atomic_notes = []
     used_filenames = set()
@@ -65,7 +78,7 @@ Teks mentah:
         
         try:
             # Prompt the local LLM
-            prompt = prompt_template.replace("{text_chunk}", chunk[:2500])  # slightly larger limit
+            prompt = prompt_template.replace("{text_chunk}", _safe_truncate(chunk, 2500))
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
@@ -74,11 +87,16 @@ Teks mentah:
             ], format='json', stream=True)
             
             response_text = ""
-            for chunk_resp in response:
-                content = chunk_resp.get('message', {}).get('content', '')
-                if content:
-                    response_text += content
-                    print(content, end='', flush=True)
+            for stream_chunk in response:
+                # Handle both dict and object-style responses from ollama-python
+                if isinstance(stream_chunk, dict):
+                    token = stream_chunk.get('message', {}).get('content', '')
+                else:
+                    msg = getattr(stream_chunk, 'message', None)
+                    token = getattr(msg, 'content', '') if msg else ''
+                if token:
+                    response_text += token
+                    print(token, end='', flush=True)
             
             print("\n✅ Selesai memproses chunk.")
             

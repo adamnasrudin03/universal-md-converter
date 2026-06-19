@@ -1,6 +1,11 @@
 import os
 import whisper
-from moviepy.editor import VideoFileClip
+
+# moviepy >= 2.0 removed moviepy.editor; handle both versions
+try:
+    from moviepy import VideoFileClip
+except ImportError:
+    from moviepy.editor import VideoFileClip
 
 def extract_audio_from_video(video_path, audio_path):
     video = None

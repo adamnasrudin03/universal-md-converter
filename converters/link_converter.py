@@ -9,9 +9,11 @@ def convert_link(url):
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         
-        # Fix encoding for non-UTF-8 pages
+        # Fix encoding for non-UTF-8 pages (guard against apparent_encoding being None)
         if response.encoding and response.encoding.lower() == 'iso-8859-1':
-            response.encoding = response.apparent_encoding
+            apparent = response.apparent_encoding
+            if apparent:
+                response.encoding = apparent
 
         # Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')

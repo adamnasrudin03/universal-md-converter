@@ -100,7 +100,9 @@ def main():
     if is_url:
         print(f"Processing URL: {source}")
         parsed_url = urllib.parse.urlparse(source)
-        base_title = sanitize_basename(parsed_url.netloc + parsed_url.path.replace('/', '-'))
+        # Use just the path for the base title, excluding the domain for cleaner filenames
+        path_part = parsed_url.path.strip('/').replace('/', '-')
+        base_title = sanitize_basename(path_part) if path_part else sanitize_basename(parsed_url.netloc)
         
         if "instagram.com" in parsed_url.netloc:
             source_type = "Instagram Post"
@@ -141,7 +143,10 @@ def main():
     if not content or not content.strip():
         print("Error: No content could be extracted from the source. Aborting.")
         return
-    if content.startswith("Error") or content.startswith("Failed"):
+    # Guard: abort if content starts with a known converter error prefix.
+    # Use specific prefixes ('Error:' / 'Error extracting' / 'Failed to') to avoid
+    # false positives when real document content starts with these common words.
+    if content.startswith("Error:") or content.startswith("Error extracting") or content.startswith("Failed to"):
         print(f"Converter returned an error: {content}")
         return
         

@@ -4,6 +4,16 @@ import argparse
 import json
 import sys
 
+def _safe_truncate(text, max_chars):
+    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars]
+    last_space = truncated.rfind(' ')
+    if last_space > max_chars * 0.8:
+        return truncated[:last_space]
+    return truncated
+
 try:
     import ollama
 except ImportError:
@@ -79,14 +89,19 @@ Struktur JSON yang diharapkan:
 Teks mentah:
 {text_chunk}
 """
-    prompt = prompt_template.replace("{text_chunk}", raw_text[:3000])
+    prompt = prompt_template.replace("{text_chunk}", _safe_truncate(raw_text, 3000))
     
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
         ], format='json')
         
-        response_text = response.get('message', {}).get('content', '')
+        # Handle both dict and object-style responses from ollama-python
+        if isinstance(response, dict):
+            response_text = response.get('message', {}).get('content', '')
+        else:
+            msg = getattr(response, 'message', None)
+            response_text = getattr(msg, 'content', '') if msg else ''
         try:
             parsed_json = json.loads(response_text)
         except json.JSONDecodeError:
@@ -166,7 +181,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             
             if new_rag_content:
                 # 3. Tulis ulang file
-                new_file_content = f"{metadata}\n\n---\n\n{new_rag_content}\n\n---\n{footer}"
+                new_file_content = f"{metadata}\n\n---\n\n{new_rag_content}\n\n---\n\n{footer}"
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(new_file_content)
                 print("  ✅ Berhasil ditulis. Memvalidasi ulang secara otomatis...")
