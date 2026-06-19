@@ -116,6 +116,8 @@ Teks mentah:
             
             # Extract filename (guard against null from LLM)
             slug = parsed_json.get("filename_slug", "") or ""
+            if not isinstance(slug, str):
+                slug = str(slug)
             slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
             slug = re.sub(r'[\s]+', '-', slug)
             if slug:
@@ -123,6 +125,19 @@ Teks mentah:
             
             # Extract content (guard against null from LLM)
             rag_content = parsed_json.get("rag_content", "") or ""
+            
+            # If the LLM returned a nested dict instead of a markdown string, convert it
+            if isinstance(rag_content, dict):
+                rag_parts = []
+                for k, v in rag_content.items():
+                    if isinstance(v, str):
+                        rag_parts.append(f"{k}\n{v}")
+                    else:
+                        rag_parts.append(f"{k}\n{json.dumps(v, ensure_ascii=False)}")
+                rag_content = "\n\n".join(rag_parts)
+            elif not isinstance(rag_content, str):
+                rag_content = str(rag_content)
+
             if rag_content.strip():
                 formatted_content = rag_content
             

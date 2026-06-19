@@ -123,6 +123,19 @@ Teks mentah:
         
         # Extract content (guard against null from LLM)
         rag_content = parsed_json.get("rag_content", "") or ""
+        
+        # If the LLM returned a nested dict instead of a markdown string, convert it
+        if isinstance(rag_content, dict):
+            rag_parts = []
+            for k, v in rag_content.items():
+                if isinstance(v, str):
+                    rag_parts.append(f"{k}\n{v}")
+                else:
+                    rag_parts.append(f"{k}\n{json.dumps(v, ensure_ascii=False)}")
+            rag_content = "\n\n".join(rag_parts)
+        elif not isinstance(rag_content, str):
+            rag_content = str(rag_content)
+            
         tags_list = parsed_json.get("tags", []) or []
         
         if tags_list and isinstance(tags_list, list):
