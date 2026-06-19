@@ -10,12 +10,10 @@ except ImportError:
     OLLAMA_AVAILABLE = False
 
 REQUIRED_SECTIONS = [
-    r"## 🧠 Summary Knowledge",
-    r"## 💡 Key Concept",
-    r"## 🔍 Scanner & Alert Criteria",
-    r"## ✅ Trading Checklist",
-    r"## 📓 Jurnal Evaluasi",
-    r"## 📝 Original Context"
+    r"## 🧠 Core Summary",
+    r"## 💡 Key Concepts & Definitions",
+    r"## 📌 Important Details / Application",
+    r"## 📝 Original Context & Quotes"
 ]
 
 def heuristic_validation(content):
@@ -58,12 +56,12 @@ def llm_validation(content, model_name='llama3'):
         return 0, "ERROR", ["Ollama package is not installed."]
         
     prompt = f"""
-Anda adalah AI Quality Control untuk sistem RAG Trading Saham.
+Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut. 
 Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
-1. Struktur: Apakah memiliki bagian Summary, Key Concept, Scanner Criteria, Checklist, dan Evaluasi?
-2. Kualitas Konten: Apakah isinya relevan dengan trading/investasi? Apakah cukup komprehensif?
-3. Format: Apakah formatnya rapi dan mudah dibaca (RAG-ready)?
+1. Struktur: Apakah memiliki 4 bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah ada header dinamis tambahan yang sesuai konteks?
+2. Kualitas Konten: Apakah isinya informatif, akurat, dan komprehensif sesuai topik aslinya?
+3. Format: Apakah formatnya rapi dan mudah dibaca oleh manusia maupun AI (RAG-ready)?
 
 Format jawaban HANYA berupa JSON valid:
 {{

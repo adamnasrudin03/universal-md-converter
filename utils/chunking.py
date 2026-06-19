@@ -18,9 +18,12 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     atomic_notes = []
     
     prompt_template = """
-Anda adalah asisten AI profesional untuk trader saham. 
+Anda adalah asisten AI profesional spesialis ekstraksi informasi dan knowledge management.
 Tugas Anda adalah mengekstrak, merangkum, dan merestrukturisasi potongan teks berikut menjadi 'Knowledge Summary' yang sangat terstruktur, komprehensif, namun mudah dibaca baik oleh manusia maupun AI.
-Hasil ekstraksi ini akan digunakan untuk berbagai keperluan: 
+Hasil ekstraksi ini akan digunakan sebagai basis data untuk sistem Retrieval-Augmented Generation (RAG).
+
+KHUSUS JIKA TEKS BERKAITAN DENGAN SAHAM/TRADING: 
+Pastikan hasil ekstraksi Anda dioptimalkan (melalui Header Dinamis) untuk keperluan berikut:
 1. Tanya Jawab (RAG)
 2. Membuat Scanner Saham
 3. Membuat Alert Trading
@@ -34,7 +37,7 @@ Struktur JSON yang diharapkan:
 {{
   "filename_slug": "kata-kunci-pendek-maks-3-kata",
   "tags": ["tag1", "tag2"],
-  "rag_content": "## 🧠 Summary Knowledge (RAG & Analisa)\\n[Ringkasan inti yang padat dan komprehensif dari materi ini...]\\n\\n## 💡 Key Concept\\n[Penjelasan konsep utama, teori, atau strategi dasar...]\\n\\n## 🔍 Scanner & Alert Criteria\\n[Parameter teknikal/fundamental spesifik yang bisa diubah menjadi screener saham atau alert (misal: Harga > EMA 20, Volume membesar)...]\\n\\n## ✅ Trading Checklist\\n[Langkah-langkah atau syarat (SOP) yang harus dipenuhi sebelum entry/exit...]\\n\\n## 📓 Jurnal Evaluasi\\n[Poin-poin penting untuk bahan review/evaluasi trading di masa depan (kesalahan umum, psikologi, mitigasi risiko)...]\\n\\n## 📝 Original Context\\n[Kutipan penting atau konteks asli dari sumber...]"
+  "rag_content": "## 🧠 Core Summary\\n[Ringkasan inti yang padat dan komprehensif dari materi ini...]\\n\\n## 💡 Key Concepts & Definitions\\n[Penjelasan konsep utama, teori, istilah, atau ide dasar...]\\n\\n## 📌 Important Details / Application\\n[Rincian penting, studi kasus, pedoman, atau penerapan praktis dari materi...]\\n\\n## [TAMBAHKAN 1 ATAU 2 HEADER DINAMIS SESUAI KONTEKS, misal: 💻 Code Snippets, 🥘 Ingredients, 📈 Trading Setup, ⏳ Timeline, dll]\\n[Isi dari header dinamis tersebut...]\\n\\n## 📝 Original Context & Quotes\\n[Kutipan penting, pesan moral, atau konteks asli dari sumber...]"
 }}
 
 Teks mentah:
