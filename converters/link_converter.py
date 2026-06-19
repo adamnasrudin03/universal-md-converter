@@ -6,8 +6,12 @@ def convert_link(url):
     try:
         # Add a simple user agent to avoid being blocked by some sites
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
+        
+        # Fix encoding for non-UTF-8 pages
+        if response.encoding and response.encoding.lower() == 'iso-8859-1':
+            response.encoding = response.apparent_encoding
 
         # Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -20,6 +24,13 @@ def convert_link(url):
         
         # Convert HTML to Markdown
         markdown_text = md(html_content, heading_style="ATX")
-        return markdown_text.strip()
+        result = markdown_text.strip()
+        if not result:
+            return "*No text could be extracted from this web page.*"
+        return result
+    except requests.exceptions.Timeout:
+        return "Error extracting Web Link: Request timed out."
+    except requests.exceptions.ConnectionError:
+        return "Error extracting Web Link: Could not connect to the URL."
     except Exception as e:
         return f"Error extracting Web Link: {str(e)}"

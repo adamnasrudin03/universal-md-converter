@@ -17,6 +17,6 @@ def convert_docx(file_path):
                     content.append(f"{prefix} {para.text}")
                 else:
                     content.append(para.text)
-        return "\n\n".join(content)
+        return "\n\n".join(content) if content else "*No text could be extracted from this document.*"
     except Exception as e:
         return f"Error extracting DOCX: {str(e)}"

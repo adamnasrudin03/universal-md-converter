@@ -25,7 +25,11 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     if current_chunk:
         chunks.append(current_chunk)
         
+    if not text or not text.strip():
+        return []
+        
     atomic_notes = []
+    used_filenames = set()
     
     prompt_template = """
 Anda adalah asisten AI profesional spesialis ekstraksi informasi dan knowledge management.
@@ -97,7 +101,14 @@ Teks mentah:
             slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
             slug = re.sub(r'[\s]+', '-', slug)
             if slug:
-                filename = f"{base_name}-{slug}.md"
+                candidate = f"{base_name}-{slug}.md"
+                # Prevent filename collision
+                counter = 1
+                final_name = candidate
+                while final_name in used_filenames:
+                    final_name = f"{base_name}-{slug}-{counter}.md"
+                    counter += 1
+                filename = final_name
             
             # Extract content
             rag_content = parsed_json.get("rag_content", "")
@@ -116,6 +127,7 @@ Teks mentah:
             # We don't 'pass' here, we just let it use the fallback formatted_content (raw chunk)
 
             
+        used_filenames.add(filename)
         atomic_notes.append({
             "filename": filename,
             "content": formatted_content

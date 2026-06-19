@@ -115,7 +115,7 @@ def main():
 
         print(f"Processing File: {source}")
         ext = os.path.splitext(source)[1].lower()
-        base_name_raw = os.path.basename(source).split('.')[0]
+        base_name_raw = os.path.splitext(os.path.basename(source))[0]
         base_title = sanitize_basename(base_name_raw)
         
         if ext == '.pdf':
@@ -137,8 +137,20 @@ def main():
             print(f"Error: Unsupported file extension '{ext}'")
             return
             
+    # Guard: abort if content is empty or is an error message from a converter
+    if not content or not content.strip():
+        print("Error: No content could be extracted from the source. Aborting.")
+        return
+    if content.startswith("Error") or content.startswith("Failed"):
+        print(f"Converter returned an error: {content}")
+        return
+        
     print("Splitting text into Atomic Notes intelligently...")
     atomic_notes = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)
+    
+    if not atomic_notes:
+        print("Warning: No atomic notes were generated (text may be empty).")
+        return
     
     for note in atomic_notes:
         filename = note["filename"]

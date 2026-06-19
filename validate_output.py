@@ -23,7 +23,7 @@ def heuristic_validation(content):
     feedback = []
     
     # Check for tags
-    if re.search(r'#\w+', content):
+    if re.search(r'^#[a-zA-Z]\w*', content, re.MULTILINE):
         score += 10
     else:
         feedback.append("Tags are missing.")

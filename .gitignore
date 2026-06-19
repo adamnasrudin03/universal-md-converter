@@ -12,6 +12,7 @@ ENV/
 # Output directories
 output_notes/
 output_notes_ig/
+output_notes_web/
 
 # Temporary directories and files
 temp_ig_*/
