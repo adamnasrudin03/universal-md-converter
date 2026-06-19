@@ -100,8 +100,11 @@ make run INPUT="https://www.instagram.com/p/..."
 # Contoh Konversi Website
 make run INPUT="https://www.cnbc.com/..."
 
-# Contoh Konversi File Lokal
+# Contoh Konversi File Lokal (Auto-Detect Model)
 make run INPUT="/path/ke/buku.pdf"
+
+# Contoh Jika Ingin Memilih Model Spesifik (Override)
+make run INPUT="/path/ke/buku.pdf" MODEL="qwen2.5:0.5b"
 
 # Hapus semua output sebelumnya
 make clean

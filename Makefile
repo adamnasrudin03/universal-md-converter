@@ -11,15 +11,17 @@ setup:
 
 run:
 	@if [ -z "$(INPUT)" ]; then echo "ERROR: Harap berikan INPUT. Contoh: make run INPUT='https://...' atau make run INPUT='path/to/file'"; exit 1; fi; \
+	MODEL_ARG=""; \
+	if [ -n "$(MODEL)" ]; then MODEL_ARG="-m $(MODEL)"; fi; \
 	if echo "$(INPUT)" | grep -q "instagram.com"; then \
 		echo "=> Memproses link Instagram..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes_ig; \
+		./venv/bin/python main.py "$(INPUT)" -o output_notes_ig $$MODEL_ARG; \
 	elif echo "$(INPUT)" | grep -q "^http"; then \
 		echo "=> Memproses link Website..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes_web; \
+		./venv/bin/python main.py "$(INPUT)" -o output_notes_web $$MODEL_ARG; \
 	else \
 		echo "=> Memproses file lokal..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes; \
+		./venv/bin/python main.py "$(INPUT)" -o output_notes $$MODEL_ARG; \
 	fi
 
 validate:
