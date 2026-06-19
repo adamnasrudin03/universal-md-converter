@@ -119,14 +119,7 @@ Teks mentah:
             slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
             slug = re.sub(r'[\s]+', '-', slug)
             if slug:
-                candidate = f"{base_name}-{slug}.md"
-                # Prevent filename collision
-                counter = 1
-                final_name = candidate
-                while final_name in used_filenames:
-                    final_name = f"{base_name}-{slug}-{counter}.md"
-                    counter += 1
-                filename = final_name
+                filename = f"{base_name}-{slug}.md"
             
             # Extract content (guard against null from LLM)
             rag_content = parsed_json.get("rag_content", "") or ""
@@ -147,7 +140,17 @@ Teks mentah:
             print(f"Warning: Chunk {idx+1} failed AI processing ({str(e)}). Using raw text.")
             # We don't 'pass' here, we just let it use the fallback formatted_content (raw chunk)
 
-            
+        # Prevent any filename collision (both from AI slug or fallback)
+        candidate = filename
+        counter = 1
+        while candidate in used_filenames:
+            if candidate.endswith(".md"):
+                candidate = f"{candidate[:-3]}-{counter}.md"
+            else:
+                candidate = f"{candidate}-{counter}.md"
+            counter += 1
+        filename = candidate
+        
         used_filenames.add(filename)
         atomic_notes.append({
             "filename": filename,

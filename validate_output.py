@@ -2,6 +2,7 @@ import os
 import re
 import argparse
 import json
+import sys
 
 def _safe_truncate(text, max_chars):
     """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
@@ -117,7 +118,7 @@ Dokumen untuk dievaluasi:
         status = parsed_json.get("status", "NEEDS RECONVERT")
         if status not in ("OK", "NEEDS RECONVERT", "ERROR"):
             status = "OK" if score >= 80 else "NEEDS RECONVERT"
-        feedback = parsed_json.get("feedback", [])
+        feedback = parsed_json.get("feedback", []) or []
         if not isinstance(feedback, list):
             feedback = [str(feedback)]
         
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     
     if not os.path.exists(target_path):
         print(f"Error: Path {target_path} tidak ditemukan.")
-        exit(1)
+        sys.exit(1)
         
     print(f"Memulai validasi pada: {target_path}")
     print(f"Metode: {'LLM (' + args.model + ')' if args.llm else 'Heuristic/Regex'}\n")

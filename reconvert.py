@@ -218,6 +218,6 @@ if __name__ == "__main__":
     
     if not os.path.isdir(args.path):
         print(f"Error: {args.path} bukan direktori yang valid.")
-        exit(1)
+        sys.exit(1)
         
     reconvert_directory(args.path, args.llm_validate, args.model, args.retries)
