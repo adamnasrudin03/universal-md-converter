@@ -93,14 +93,15 @@ Untuk mempermudah penggunaan tanpa harus selalu memanggil `venv` atau mengingat 
 # Setup Environment Pertama Kali
 make setup
 
-# Konversi Instagram
-make run-ig URL="https://www.instagram.com/p/..."
+# Menggunakan 1 Perintah (Script Otomatis Menentukan Jenis File/Link)
+# Contoh Konversi Instagram
+make run INPUT="https://www.instagram.com/p/..."
 
-# Konversi Website
-make run-web URL="https://www.cnbc.com/..."
+# Contoh Konversi Website
+make run INPUT="https://www.cnbc.com/..."
 
-# Konversi File Lokal
-make run-file FILE="/path/ke/buku.pdf"
+# Contoh Konversi File Lokal
+make run INPUT="/path/ke/buku.pdf"
 
 # Hapus semua output sebelumnya
 make clean
@@ -127,4 +128,16 @@ make validate-llm
 
 # Spesifik direktori
 make validate-llm DIR="output_notes_ig/"
+```
+
+## 🔄 Reconvert Otomatis
+Jika proses validasi di atas menemukan file dengan status **NEEDS RECONVERT**, Anda bisa memproses ulang file tersebut secara otomatis. Sistem akan mengekstrak kembali teks aslinya dan memanggil ulang Ollama untuk memperbaiki formatnya. Sistem juga dilengkapi dengan fitur **auto-retry**, di mana file akan divalidasi ulang setelah proses reconvert dan jika masih gagal, akan diulang kembali (maksimal 2 kali percobaan).
+
+
+```bash
+# Mereconvert file yang gagal berdasarkan validasi cepat (Heuristic)
+make reconvert
+
+# Mereconvert file yang gagal berdasarkan validasi LLM
+make reconvert-llm
 ```
