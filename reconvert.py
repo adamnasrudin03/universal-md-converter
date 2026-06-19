@@ -72,7 +72,7 @@ Struktur JSON yang diharapkan:
 Teks mentah:
 {text_chunk}
 """
-    prompt = prompt_template.format(text_chunk=raw_text)
+    prompt = prompt_template.replace("{text_chunk}", raw_text)
     
     try:
         response = ollama.chat(model=model_name, messages=[

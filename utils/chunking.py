@@ -51,7 +51,7 @@ Teks mentah:
         
         try:
             # Prompt the local LLM
-            prompt = prompt_template.format(text_chunk=chunk[:2500])  # slightly larger limit
+            prompt = prompt_template.replace("{text_chunk}", chunk[:2500])  # slightly larger limit
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
