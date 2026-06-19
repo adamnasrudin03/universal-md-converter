@@ -29,16 +29,19 @@ validate:
 	./venv/bin/python validate_output.py "$(DIR)"
 
 validate-llm:
-	@echo "=> Menjalankan validasi LLM (Mendalam) pada direktori: $(DIR)"
-	./venv/bin/python validate_output.py "$(DIR)" --llm
+	@MODEL_ARG=""; if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
+	echo "=> Menjalankan validasi LLM (Mendalam) pada direktori: $(DIR)"; \
+	./venv/bin/python validate_output.py "$(DIR)" --llm $$MODEL_ARG
 
 reconvert:
-	@echo "=> Mencari dan mereconvert file yang gagal (Heuristic) di direktori: $(DIR)"
-	./venv/bin/python reconvert.py "$(DIR)"
+	@MODEL_ARG=""; if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
+	echo "=> Mencari dan mereconvert file yang gagal (Heuristic) di direktori: $(DIR)"; \
+	./venv/bin/python reconvert.py "$(DIR)" $$MODEL_ARG
 
 reconvert-llm:
-	@echo "=> Mencari dan mereconvert file yang gagal (LLM) di direktori: $(DIR)"
-	./venv/bin/python reconvert.py "$(DIR)" --llm-validate
+	@MODEL_ARG=""; if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
+	echo "=> Mencari dan mereconvert file yang gagal (LLM) di direktori: $(DIR)"; \
+	./venv/bin/python reconvert.py "$(DIR)" --llm-validate $$MODEL_ARG
 
 
 clean:
