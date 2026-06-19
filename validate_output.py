@@ -79,7 +79,17 @@ Dokumen untuk dievaluasi:
         ], format='json')
         
         response_text = response['message']['content']
-        parsed_json = json.loads(response_text)
+        try:
+            parsed_json = json.loads(response_text)
+        except json.JSONDecodeError:
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                try:
+                    parsed_json = json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    return 0, "ERROR", ["LLM Validation failed: Regex matched but still not valid JSON"]
+            else:
+                return 0, "ERROR", ["LLM Validation failed: Valid JSON not found in LLM response"]
         
         score = parsed_json.get("score", 0)
         status = parsed_json.get("status", "NEEDS RECONVERT")

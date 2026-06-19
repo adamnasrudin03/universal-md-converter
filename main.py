@@ -54,8 +54,8 @@ def ensure_model_installed(model_name):
         else:
             available = [m.get('name', m.get('model', '')) for m in model_list.get('models', [])]
             
-        # Match base name, e.g., "llama3.2" matches "llama3.2:latest"
-        is_installed = any(model_name in m for m in available)
+        # Match exact name or with a tag, e.g., "llama3" matches "llama3:latest" or "llama3" exactly
+        is_installed = any(m == model_name or m.startswith(model_name + ':') for m in available)
         
         if not is_installed:
             print(f"📥 Model '{model_name}' belum ter-install. Sedang mendownload otomatis...")

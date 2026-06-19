@@ -84,7 +84,10 @@ Teks mentah:
                 # Fallback regex if LLM still wraps in markdown blocks
                 json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
                 if json_match:
-                    parsed_json = json.loads(json_match.group(0))
+                    try:
+                        parsed_json = json.loads(json_match.group(0))
+                    except json.JSONDecodeError:
+                        raise Exception("Regex matched but still not valid JSON")
                 else:
                     raise Exception("Valid JSON not found in LLM response")
             

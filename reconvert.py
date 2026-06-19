@@ -87,7 +87,19 @@ Teks mentah:
         ], format='json')
         
         response_text = response['message']['content']
-        parsed_json = json.loads(response_text)
+        try:
+            parsed_json = json.loads(response_text)
+        except json.JSONDecodeError:
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                try:
+                    parsed_json = json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    print("Error: Regex matched but still not valid JSON")
+                    return None
+            else:
+                print("Error: Valid JSON not found in LLM response")
+                return None
         
         # Extract content
         rag_content = parsed_json.get("rag_content", "")
