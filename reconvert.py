@@ -95,11 +95,17 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
         for file in files:
             if file.endswith(".md"):
                 file_path = os.path.join(root, file)
+                # Cetak progress agar user tau sedang memproses file apa
+                print(f"  > Mengecek {file} ... ", end="", flush=True)
+                
                 # Validasi file
                 res = validate_file(file_path, use_llm_validation, model_name)
                 
                 if res['status'] == "NEEDS RECONVERT":
+                    print("❌ BUTUH RECONVERT")
                     files_to_reconvert.append((file_path, res))
+                else:
+                    print(f"✅ OK ({res['score']}/100)")
                     
     if not files_to_reconvert:
         print("✅ Tidak ada file yang butuh di-reconvert. Semuanya OK!")

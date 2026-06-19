@@ -127,30 +127,27 @@ if __name__ == "__main__":
     print(f"Memulai validasi pada: {target_path}")
     print(f"Metode: {'LLM (' + args.model + ')' if args.llm else 'Heuristic/Regex'}\n")
     
-    results = []
-    
-    if os.path.isfile(target_path):
-        res = validate_file(target_path, args.llm, args.model)
-        results.append(res)
-    elif os.path.isdir(target_path):
-        for root, dirs, files in os.walk(target_path):
-            for file in files:
-                if file.endswith(".md"):
-                    file_path = os.path.join(root, file)
-                    res = validate_file(file_path, args.llm, args.model)
-                    results.append(res)
-                    
-    # Print results
-    for res in results:
+    def print_result(res):
         status_color = "\033[92m" if res['status'] == "OK" else "\033[91m"
         reset_color = "\033[0m"
-        
         print(f"📄 File: {res['file']}")
         print(f"   Score: {res['score']}/100")
         print(f"   Status: {status_color}{res['status']}{reset_color}")
-        
         if res['feedback'] and res['status'] != "OK":
             print("   Feedback:")
             for fb in res['feedback']:
                 print(f"     - {fb}")
         print("-" * 40)
+    
+    if os.path.isfile(target_path):
+        print(f"> Memvalidasi {target_path}...", flush=True)
+        res = validate_file(target_path, args.llm, args.model)
+        print_result(res)
+    elif os.path.isdir(target_path):
+        for root, dirs, files in os.walk(target_path):
+            for file in files:
+                if file.endswith(".md"):
+                    file_path = os.path.join(root, file)
+                    print(f"> Memvalidasi {file}...", flush=True)
+                    res = validate_file(file_path, args.llm, args.model)
+                    print_result(res)
