@@ -116,9 +116,9 @@ Teks mentah:
                 print("Error: Valid JSON not found in LLM response")
                 return None
         
-        # Extract content
-        rag_content = parsed_json.get("rag_content", "")
-        tags_list = parsed_json.get("tags", [])
+        # Extract content (guard against null from LLM)
+        rag_content = parsed_json.get("rag_content", "") or ""
+        tags_list = parsed_json.get("tags", []) or []
         
         if tags_list and isinstance(tags_list, list):
             tags_str = "\n".join([f"#{t}" for t in tags_list]) + "\n\n"

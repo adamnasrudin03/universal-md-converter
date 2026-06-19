@@ -114,8 +114,8 @@ Teks mentah:
                 else:
                     raise Exception("Valid JSON not found in LLM response")
             
-            # Extract filename
-            slug = parsed_json.get("filename_slug", "")
+            # Extract filename (guard against null from LLM)
+            slug = parsed_json.get("filename_slug", "") or ""
             slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
             slug = re.sub(r'[\s]+', '-', slug)
             if slug:
@@ -128,13 +128,13 @@ Teks mentah:
                     counter += 1
                 filename = final_name
             
-            # Extract content
-            rag_content = parsed_json.get("rag_content", "")
+            # Extract content (guard against null from LLM)
+            rag_content = parsed_json.get("rag_content", "") or ""
             if rag_content.strip():
                 formatted_content = rag_content
             
-            # Extract tags
-            tags_list = parsed_json.get("tags", [])
+            # Extract tags (guard against null from LLM)
+            tags_list = parsed_json.get("tags", []) or []
             if tags_list and isinstance(tags_list, list):
                 tags = "\n".join([f"#{t}" for t in tags_list]) + "\n\n"
                 formatted_content = tags + formatted_content

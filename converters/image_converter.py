@@ -1,5 +1,5 @@
 import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance
 
 def convert_image(file_path):
     try:

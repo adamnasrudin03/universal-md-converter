@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 import instaloader
 from urllib.parse import urlparse
 from .image_converter import convert_image
@@ -39,8 +40,7 @@ def convert_ig_link(url):
             content.append(post.caption)
             content.append("\n\n---\n\n")
             
-        temp_dir = f"temp_ig_{shortcode}"
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(prefix=f"temp_ig_{shortcode}_")
         
         # Download the post to a temporary directory
         L.download_post(post, target=temp_dir)

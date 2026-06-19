@@ -88,8 +88,7 @@ def main():
     # Ensure model is downloaded before proceeding
     ensure_model_installed(model_name)
     
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
+    os.makedirs(outdir, exist_ok=True)
     
     is_url = source.startswith("http://") or source.startswith("https://")
     
@@ -123,7 +122,7 @@ def main():
         if ext == '.pdf':
             source_type = "PDF Document"
             content = convert_pdf(source)
-        elif ext in ['.docx', '.doc']:
+        elif ext == '.docx':
             source_type = "Word Document"
             content = convert_docx(source)
         elif ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
@@ -146,7 +145,7 @@ def main():
     # Guard: abort if content starts with a known converter error prefix.
     # Use specific prefixes ('Error:' / 'Error extracting' / 'Failed to') to avoid
     # false positives when real document content starts with these common words.
-    if content.startswith("Error:") or content.startswith("Error extracting") or content.startswith("Failed to"):
+    if content.startswith("Error:") or content.startswith("Error extracting") or content.startswith("Error transcribing") or content.startswith("Failed to"):
         print(f"Converter returned an error: {content}")
         return
         
