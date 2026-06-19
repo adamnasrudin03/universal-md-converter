@@ -13,7 +13,7 @@ Pastikan hasil ekstraksi Anda dioptimalkan (melalui Header Dinamis) untuk keperl
 6. Jurnal Evaluasi Trading
 
 Format jawaban Anda HANYA dalam bentuk JSON valid tanpa teks tambahan di luar JSON.
-
+PENTING: Seluruh isi dari JSON (termasuk ringkasan, penjelasan, dan detail) HARUS ditulis dalam Bahasa Indonesia. NAMUN, biarkan istilah teknis/spesifik (terutama istilah trading/saham seperti 'breakout', 'flag', 'support', 'resistance', dsb.) tetap dalam bahasa aslinya (Inggris) agar konteksnya tidak rusak.
 Struktur JSON yang diharapkan:
 {{
   "filename_slug": "kata-kunci-pendek-maks-3-kata",
