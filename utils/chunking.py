@@ -2,6 +2,8 @@ import re
 import json
 import ollama
 
+from utils.prompts import RAG_EXTRACTION_PROMPT
+
 def _safe_truncate(text, max_chars):
     """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
     if len(text) <= max_chars:
@@ -44,32 +46,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     atomic_notes = []
     used_filenames = set()
     
-    prompt_template = """
-Anda adalah asisten AI profesional spesialis ekstraksi informasi dan knowledge management.
-Tugas Anda adalah mengekstrak, merangkum, dan merestrukturisasi potongan teks berikut menjadi 'Knowledge Summary' yang sangat terstruktur, komprehensif, namun mudah dibaca baik oleh manusia maupun AI.
-Hasil ekstraksi ini akan digunakan sebagai basis data untuk sistem Retrieval-Augmented Generation (RAG).
 
-KHUSUS JIKA TEKS BERKAITAN DENGAN SAHAM/TRADING: 
-Pastikan hasil ekstraksi Anda dioptimalkan (melalui Header Dinamis) untuk keperluan berikut:
-1. Tanya Jawab (RAG)
-2. Membuat Scanner Saham
-3. Membuat Alert Trading
-4. Bahan Analisa Saham
-5. Checklist Trading
-6. Jurnal Evaluasi Trading
-
-Format jawaban Anda HANYA dalam bentuk JSON valid tanpa teks tambahan di luar JSON.
-
-Struktur JSON yang diharapkan:
-{{
-  "filename_slug": "kata-kunci-pendek-maks-3-kata",
-  "tags": ["tag1", "tag2"],
-  "rag_content": "## 🧠 Core Summary\\n[Ringkasan inti yang padat dan komprehensif dari materi ini...]\\n\\n## 💡 Key Concepts & Definitions\\n[Penjelasan konsep utama, teori, istilah, atau ide dasar...]\\n\\n## 📌 Important Details / Application\\n[Rincian penting, studi kasus, pedoman, atau penerapan praktis dari materi...]\\n\\n## [TAMBAHKAN 1 ATAU 2 HEADER DINAMIS SESUAI KONTEKS, misal: 💻 Code Snippets, 🥘 Ingredients, 📈 Trading Setup, ⏳ Timeline, dll]\\n[Isi dari header dinamis tersebut...]\\n\\n## 📝 Original Context & Quotes\\n[Kutipan penting, pesan moral, atau konteks asli dari sumber...]"
-}}
-
-Teks mentah:
-{text_chunk}
-"""
     
     for idx, chunk in enumerate(chunks):
         filename = f"{base_name}-part-{idx+1}.md"
@@ -78,7 +55,7 @@ Teks mentah:
         
         try:
             # Prompt the local LLM
-            prompt = prompt_template.replace("{text_chunk}", _safe_truncate(chunk, 2500))
+            prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", _safe_truncate(chunk, 2500))
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
