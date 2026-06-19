@@ -15,7 +15,7 @@ Pastikan Anda memiliki hal-hal berikut terinstal di sistem Anda:
 1. **Python 3.9+**
 2. **Ollama** (Wajib untuk fitur pemotongan dan format RAG otomatis berbasis AI lokal)
    - *Cara Install:* Unduh aplikasinya di [https://ollama.com/download](https://ollama.com/download).
-   - *Model:* Setelah terinstal, wajib mengunduh model dengan membuka terminal dan menjalankan perintah: `ollama run llama3`.
+   - *(Script sudah dilengkapi fitur auto-download model, namun pastikan aplikasi Ollama Anda menyala di latar belakang saat script dijalankan).*
 3. **Tesseract OCR** (Untuk konversi gambar/slide IG): `brew install tesseract` (Mac) atau `apt-get install tesseract-ocr` (Linux).
    - *💡 Tips Ekstra: Agar Tesseract bisa membaca teks berbahasa Indonesia dengan jauh lebih akurat pada gambar/slide, sangat disarankan untuk menginstal paket bahasa Indonesianya: `brew install tesseract-lang` (Mac) atau `apt-get install tesseract-ocr-ind` (Linux).*
 4. **FFmpeg** (Untuk pemrosesan audio/video dari Whisper): `brew install ffmpeg` (Mac) atau `apt-get install ffmpeg` (Linux).
@@ -38,7 +38,14 @@ pip install -r requirements.txt
 Agar *formatting* berjalan dengan lancar menggunakan AI:
 1. Pastikan aplikasi **Ollama sudah berjalan** di komputer Anda (biasanya ditandai dengan ikon Llama di menu bar atau system tray).
 2. Aktifkan *virtual environment* Python Anda (`source venv/bin/activate`).
-3. Jalankan script utama `main.py` melalui command line (CLI) dengan menyertakan target file/link dan folder output.
+3. Jalankan script utama `main.py` melalui command line (CLI).
+
+### Fitur Pintar Model AI (Auto-Detect RAM & Auto-Download)
+Script ini secara otomatis mendeteksi spesifikasi RAM Mac/PC Anda:
+- Jika RAM **>= 16GB**: Sistem otomatis memilih model `llama3` (lebih cerdas).
+- Jika RAM **< 16GB**: Sistem otomatis memilih model `llama3.2` (lebih ringan dan cepat).
+
+**Penting:** Jika model yang dipilih belum pernah diinstal di komputer Anda, script ini akan otomatis mendownloadnya dari server Ollama sebelum pemrosesan dimulai!
 
 ### 1. Mengonversi Link Instagram atau Website
 Gunakan tanda kutip ganda `""` untuk mengapit URL, terutama jika link mengandung parameter khusus (seperti `?` atau `&`), untuk mencegah *error* di terminal.
@@ -59,6 +66,12 @@ python main.py "/path/ke/buku_trading.pdf" -o output_notes
 ### 3. Mengonversi File Media Lokal (Video/Audio)
 ```bash
 python main.py "/path/ke/rekaman_webinar.mp4" -o output_notes
+```
+
+### 4. Mengubah Model AI Secara Manual (Override)
+Jika Anda tidak ingin menggunakan model auto-deteksi, Anda bisa memaksakan (override) penggunaan model tertentu menggunakan parameter `-m` atau `--model`.
+```bash
+python main.py "https://www.cnbc.com/trading-news/" -o output_notes -m qwen2.5:0.5b
 ```
 
 ### Format Output (RAG Trading)

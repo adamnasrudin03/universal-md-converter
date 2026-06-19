@@ -2,7 +2,7 @@ import re
 import json
 import ollama
 
-def chunk_text_intelligently(text, base_name, max_words=600):
+def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
     """
     Split text into chunks, then use Ollama to format the text specifically for Trading RAG.
     """
@@ -50,9 +50,9 @@ Teks mentah:
             # Prompt the local LLM
             prompt = prompt_template.format(text_chunk=chunk[:2500])  # slightly larger limit
             
-            print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI...", flush=True)
+            print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
-            response = ollama.chat(model='llama3', messages=[
+            response = ollama.chat(model=model_name, messages=[
                 {'role': 'user', 'content': prompt}
             ], format='json', stream=True)
             

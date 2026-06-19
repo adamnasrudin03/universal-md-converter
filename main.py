@@ -2,9 +2,70 @@ import argparse
 import os
 import urllib.parse
 import re
+import ollama
 from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link
 from utils.markdown_formatter import generate_markdown
 from utils.chunking import chunk_text_intelligently
+import platform
+import subprocess
+
+def get_recommended_model():
+    """Detects system RAM and returns an appropriate Ollama model name."""
+    model = "llama3.2" # Default to lightweight
+    try:
+        system = platform.system()
+        total_ram_gb = 0
+        
+        if system == "Darwin": # macOS
+            res = subprocess.run(['sysctl', '-n', 'hw.memsize'], capture_output=True, text=True)
+            if res.returncode == 0:
+                total_ram_bytes = int(res.stdout.strip())
+                total_ram_gb = total_ram_bytes / (1024**3)
+        elif system == "Linux":
+            with open('/proc/meminfo', 'r') as f:
+                for line in f:
+                    if 'MemTotal' in line:
+                        kb = int(line.split()[1])
+                        total_ram_gb = kb / (1024**2)
+                        break
+                        
+        if total_ram_gb >= 15.5: # 16GB RAM or more
+            model = "llama3"
+            print(f"🖥️  System RAM: {total_ram_gb:.1f} GB. Auto-selecting heavy model: '{model}'")
+        elif total_ram_gb > 0:
+            print(f"🖥️  System RAM: {total_ram_gb:.1f} GB. Auto-selecting lightweight model: '{model}'")
+        else:
+            print(f"🖥️  Auto-selecting lightweight model: '{model}' (Failed to read RAM)")
+            
+    except Exception as e:
+        print(f"🖥️  Auto-selecting lightweight model: '{model}' (System check error)")
+        
+    return model
+
+def ensure_model_installed(model_name):
+    """Checks if the Ollama model is available locally, and pulls it if not."""
+    print(f"\n🔍 Mengecek ketersediaan model AI '{model_name}'...")
+    try:
+        model_list = ollama.list()
+        
+        # Handle different versions of ollama-python client
+        if hasattr(model_list, 'models'):
+            available = [m.model for m in model_list.models]
+        else:
+            available = [m.get('name', m.get('model', '')) for m in model_list.get('models', [])]
+            
+        # Match base name, e.g., "llama3.2" matches "llama3.2:latest"
+        is_installed = any(model_name in m for m in available)
+        
+        if not is_installed:
+            print(f"📥 Model '{model_name}' belum ter-install. Sedang mendownload otomatis...")
+            print("⏳ Mohon tunggu, proses ini bisa memakan waktu (bergantung kecepatan internet).")
+            ollama.pull(model_name)
+            print(f"✅ Berhasil mendownload model '{model_name}'.")
+        else:
+            print(f"✅ Model '{model_name}' sudah tersedia dan siap digunakan.")
+    except Exception as e:
+        print(f"⚠️ Gagal mengecek status model: {e}")
 
 def sanitize_basename(name):
     name = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
@@ -14,10 +75,18 @@ def main():
     parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")
     parser.add_argument("source", help="Path to the local file or URL to convert")
     parser.add_argument("-o", "--outdir", help="Output directory to save atomic notes", default="./output_notes")
+    parser.add_argument("-m", "--model", help="Ollama model to use for AI formatting (default: auto)", default="auto")
     
     args = parser.parse_args()
     source = args.source
     outdir = args.outdir
+    
+    model_name = args.model
+    if model_name == "auto":
+        model_name = get_recommended_model()
+        
+    # Ensure model is downloaded before proceeding
+    ensure_model_installed(model_name)
     
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -69,7 +138,7 @@ def main():
             return
             
     print("Splitting text into Atomic Notes intelligently...")
-    atomic_notes = chunk_text_intelligently(content, base_title, max_words=600)
+    atomic_notes = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)
     
     for note in atomic_notes:
         filename = note["filename"]
