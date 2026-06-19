@@ -25,7 +25,8 @@ def extract_raw_content(file_path):
         content = f.read()
         
     # Regex untuk memisahkan metadata dan konten utama
-    parts = re.split(r'\n---\n', content)
+    # Menggunakan batasan fleksibel agar tidak patah karena spasi
+    parts = re.split(r'\n+\s*---\s*\n+', content)
     
     if len(parts) >= 3:
         metadata = parts[0]

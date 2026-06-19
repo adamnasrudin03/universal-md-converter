@@ -6,14 +6,24 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     """
     Split text into chunks, then use Ollama to format the text specifically for Trading RAG.
     """
-    words = text.split()
+    lines = text.splitlines(keepends=True)
     chunks = []
+    current_chunk = ""
+    current_words = 0
     
-    # Split by simple word count for flat texts
-    for i in range(0, len(words), max_words):
-        chunk_words = words[i:i + max_words]
-        chunk_text = " ".join(chunk_words)
-        chunks.append(chunk_text)
+    # Split by lines to preserve original markdown formatting and newlines
+    for line in lines:
+        word_count = len(line.split())
+        if current_words + word_count > max_words and current_words > 0:
+            chunks.append(current_chunk)
+            current_chunk = line
+            current_words = word_count
+        else:
+            current_chunk += line
+            current_words += word_count
+            
+    if current_chunk:
+        chunks.append(current_chunk)
         
     atomic_notes = []
     
@@ -93,7 +103,7 @@ Teks mentah:
             # Extract tags
             tags_list = parsed_json.get("tags", [])
             if tags_list and isinstance(tags_list, list):
-                tags = "\\n".join([f"#{t}" for t in tags_list]) + "\\n\\n"
+                tags = "\n".join([f"#{t}" for t in tags_list]) + "\n\n"
                 formatted_content = tags + formatted_content
                 
         except Exception as e:
