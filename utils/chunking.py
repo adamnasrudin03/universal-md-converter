@@ -71,9 +71,10 @@ Teks mentah:
             
             response_text = ""
             for chunk_resp in response:
-                content = chunk_resp['message']['content']
-                response_text += content
-                print(content, end='', flush=True)
+                content = chunk_resp.get('message', {}).get('content', '')
+                if content:
+                    response_text += content
+                    print(content, end='', flush=True)
             
             print("\n✅ Selesai memproses chunk.")
             

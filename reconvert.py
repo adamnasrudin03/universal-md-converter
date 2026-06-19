@@ -86,7 +86,7 @@ Teks mentah:
             {'role': 'user', 'content': prompt}
         ], format='json')
         
-        response_text = response['message']['content']
+        response_text = response.get('message', {}).get('content', '')
         try:
             parsed_json = json.loads(response_text)
         except json.JSONDecodeError:

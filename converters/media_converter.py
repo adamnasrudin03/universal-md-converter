@@ -22,8 +22,8 @@ def extract_audio_from_video(video_path, audio_path):
                 pass
 
 def convert_media(file_path, is_video=False):
+    target_audio_path = file_path
     try:
-        target_audio_path = file_path
         if is_video:
             target_audio_path = file_path + ".temp.wav"
             success = extract_audio_from_video(file_path, target_audio_path)
@@ -34,13 +34,16 @@ def convert_media(file_path, is_video=False):
         model = whisper.load_model("base")
         result = model.transcribe(target_audio_path)
         
-        # Cleanup temp audio if we created one
-        if is_video and os.path.exists(target_audio_path):
-            os.remove(target_audio_path)
-
         text = result.get('text', '').strip()
         if not text:
             return "*No speech detected in media.*"
         return text
     except Exception as e:
         return f"Error transcribing media: {str(e)}"
+    finally:
+        # Cleanup temp audio if we created one
+        if is_video and target_audio_path != file_path and os.path.exists(target_audio_path):
+            try:
+                os.remove(target_audio_path)
+            except Exception:
+                pass
