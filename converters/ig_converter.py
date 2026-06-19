@@ -8,6 +8,7 @@ def convert_ig_link(url):
     """
     Downloads an Instagram post (Caption + Slide Images), extracts text via OCR, and combines them.
     """
+    temp_dir = None
     try:
         # Extract shortcode from URL
         # e.g., https://www.instagram.com/p/DZucoBjiQxd/ -> DZucoBjiQxd
@@ -57,10 +58,11 @@ def convert_ig_link(url):
         if not images_found:
             content.append("*No image slides found in this post.*")
             
-        # Cleanup temporary directory
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        
         return "".join(content)
         
     except Exception as e:
         return f"Error extracting Instagram post: {str(e)}"
+    finally:
+        # Selalu bersihkan temporary directory terlepas ada error atau tidak
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)

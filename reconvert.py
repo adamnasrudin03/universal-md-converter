@@ -2,7 +2,13 @@ import os
 import re
 import argparse
 import json
-import ollama
+import sys
+
+try:
+    import ollama
+except ImportError:
+    print("Error: Package 'ollama' belum ter-install. Silakan jalankan 'pip install ollama'.")
+    sys.exit(1)
 
 from validate_output import validate_file
 
@@ -30,8 +36,8 @@ def extract_raw_content(file_path):
     
     if len(parts) >= 3:
         metadata = parts[0]
-        raw_text = parts[1].strip()
-        footer = parts[2]
+        raw_text = "\n\n---\n\n".join(parts[1:-1]).strip()
+        footer = parts[-1]
         return metadata, raw_text, footer
     elif len(parts) == 2:
         metadata = parts[0]
