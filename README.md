@@ -85,3 +85,46 @@ Setiap file akan memiliki nama unik berdasarkan *slug* dan berisi:
 - `## ✅ Trading Checklist` - SOP dan langkah syarat sebelum *entry/exit*.
 - `## 📓 Jurnal Evaluasi` - Poin penting untuk bahan evaluasi psikologi dan manajemen risiko ke depan.
 - `## 📝 Original Context` - Kutipan asli dari sumber data.
+
+## 🛠 Menggunakan Makefile (Shorthand)
+Untuk mempermudah penggunaan tanpa harus selalu memanggil `venv` atau mengingat path, Anda bisa menggunakan perintah `make`:
+
+```bash
+# Setup Environment Pertama Kali
+make setup
+
+# Konversi Instagram
+make run-ig URL="https://www.instagram.com/p/..."
+
+# Konversi Website
+make run-web URL="https://www.cnbc.com/..."
+
+# Konversi File Lokal
+make run-file FILE="/path/ke/buku.pdf"
+
+# Hapus semua output sebelumnya
+make clean
+```
+
+## 🧪 Validasi Output (Quality Control)
+Sistem ini dilengkapi dengan `validate_output.py` untuk menilai apakah hasil ekstraksi sudah memenuhi standar format RAG atau perlu di-reconvert. Terdapat dua metode validasi:
+
+**1. Validasi Cepat (Heuristic/Regex):**
+Mengecek keberadaan judul/heading wajib, jumlah kata, dan tag. Sangat cepat.
+```bash
+# Menggunakan Makefile (default ke output_notes/)
+make validate
+
+# Spesifik direktori
+make validate DIR="output_notes_ig/"
+```
+
+**2. Validasi Mendalam (Ollama LLM):**
+Menggunakan model AI lokal untuk menilai kualitas tulisan dan relevansinya secara semantik.
+```bash
+# Menggunakan Makefile (default ke output_notes/)
+make validate-llm
+
+# Spesifik direktori
+make validate-llm DIR="output_notes_ig/"
+```
