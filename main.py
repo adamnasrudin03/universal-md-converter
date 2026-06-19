@@ -64,12 +64,25 @@ def ensure_model_installed(model_name):
             print(f"✅ Berhasil mendownload model '{model_name}'.")
         else:
             print(f"✅ Model '{model_name}' sudah tersedia dan siap digunakan.")
+    except ConnectionError:
+        print(f"❌ Tidak bisa terhubung ke Ollama. Pastikan aplikasi Ollama sudah berjalan!")
+        print("   Download di: https://ollama.com/download")
+        raise SystemExit(1)
     except Exception as e:
+        # Check for common connection error types wrapped in other exceptions
+        err_str = str(e).lower()
+        if 'connection' in err_str or 'refused' in err_str or 'unavailable' in err_str:
+            print(f"❌ Tidak bisa terhubung ke Ollama. Pastikan aplikasi Ollama sudah berjalan!")
+            print("   Download di: https://ollama.com/download")
+            raise SystemExit(1)
         print(f"⚠️ Gagal mengecek status model: {e}")
 
 def sanitize_basename(name):
     name = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
-    return re.sub(r'[\s]+', '-', name)
+    name = re.sub(r'[\s]+', '-', name)
+    # Strip leading/trailing hyphens and collapse multiple hyphens
+    name = re.sub(r'-+', '-', name).strip('-')
+    return name if name else 'untitled'
 
 def main():
     parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")

@@ -136,8 +136,11 @@ Teks mentah:
             # Extract tags (guard against null from LLM)
             tags_list = parsed_json.get("tags", []) or []
             if tags_list and isinstance(tags_list, list):
-                tags = "\n".join([f"#{t}" for t in tags_list]) + "\n\n"
-                formatted_content = tags + formatted_content
+                # Filter only valid string tags
+                valid_tags = [str(t) for t in tags_list if t is not None and str(t).strip()]
+                if valid_tags:
+                    tags = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
+                    formatted_content = tags + formatted_content
                 
         except Exception as e:
             # Fallback if parsing fails or Ollama is off

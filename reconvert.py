@@ -40,18 +40,23 @@ def extract_raw_content(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
         
-    # Regex untuk memisahkan metadata dan konten utama
-    # Menggunakan batasan fleksibel agar tidak patah karena spasi
-    parts = re.split(r'\n+\s*---\s*\n+', content)
+    # Use targeted approach: find the FIRST and LAST `---` separator lines
+    # to correctly isolate header, body, and footer. This avoids breaking
+    # on internal `---` horizontal rules within the RAG content itself.
+    separator = re.compile(r'^\s*---\s*$', re.MULTILINE)
+    matches = list(separator.finditer(content))
     
-    if len(parts) >= 3:
-        metadata = parts[0]
-        raw_text = "\n\n---\n\n".join(parts[1:-1]).strip()
-        footer = parts[-1]
+    if len(matches) >= 2:
+        first_sep = matches[0]
+        last_sep = matches[-1]
+        metadata = content[:first_sep.start()].rstrip()
+        raw_text = content[first_sep.end():last_sep.start()].strip()
+        footer = content[last_sep.end():].strip()
         return metadata, raw_text, footer
-    elif len(parts) == 2:
-        metadata = parts[0]
-        raw_text = parts[1].replace("*Converted using Universal MD Converter*", "").strip()
+    elif len(matches) == 1:
+        sep = matches[0]
+        metadata = content[:sep.start()].rstrip()
+        raw_text = content[sep.end():].replace("*Converted using Universal MD Converter*", "").strip()
         footer = "*Converted using Universal MD Converter*"
         return metadata, raw_text, footer
     else:
@@ -121,8 +126,11 @@ Teks mentah:
         tags_list = parsed_json.get("tags", []) or []
         
         if tags_list and isinstance(tags_list, list):
-            tags_str = "\n".join([f"#{t}" for t in tags_list]) + "\n\n"
-            rag_content = tags_str + rag_content
+            # Filter only valid string tags
+            valid_tags = [str(t) for t in tags_list if t is not None and str(t).strip()]
+            if valid_tags:
+                tags_str = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
+                rag_content = tags_str + rag_content
             
         return rag_content
     except Exception as e:

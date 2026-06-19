@@ -11,9 +11,11 @@ def convert_docx(file_path):
                     level = para.style.name.split(' ')[-1]
                     try:
                         level = int(level)
+                        # Clamp to valid markdown heading range (1-6)
+                        level = max(1, min(6, level))
                         prefix = '#' * level
                     except ValueError:
-                        prefix = '###'
+                        prefix = '##'  # Default to h2 for unrecognized heading styles
                     content.append(f"{prefix} {para.text}")
                 else:
                     content.append(para.text)

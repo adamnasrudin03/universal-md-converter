@@ -106,7 +106,12 @@ Dokumen untuk dievaluasi:
             else:
                 return 0, "ERROR", ["LLM Validation failed: Valid JSON not found in LLM response"]
         
-        score = parsed_json.get("score", 0)
+        raw_score = parsed_json.get("score", 0)
+        # Coerce score to numeric — LLM might return string or other types
+        try:
+            score = float(raw_score)
+        except (TypeError, ValueError):
+            score = 0
         # Clamp score to valid range and validate status
         score = min(100, max(0, score))
         status = parsed_json.get("status", "NEEDS RECONVERT")
