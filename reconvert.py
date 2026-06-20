@@ -81,10 +81,10 @@ def process_with_ai(raw_text, model_name='llama3'):
                     parsed_json = json.loads(json_match.group(0))
                 except json.JSONDecodeError:
                     print("Error: Regex matched but still not valid JSON")
-                    return None
+                    return None, []
             else:
                 print("Error: Valid JSON not found in LLM response")
-                return None
+                return None, []
         
         # Extract content (guard against null from LLM)
         rag_content = parsed_json.get("rag_content", "") or ""
@@ -205,7 +205,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                         print("  ⚠️ Gagal mencapai status OK setelah batas maksimal retry.")
             else:
                 print("  ❌ Gagal reconvert (LLM return None).")
-                break
+                continue
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mencari file yang gagal divalidasi dan meng-convert ulangnya dengan AI.")
