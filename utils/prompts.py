@@ -69,17 +69,34 @@ ATURAN KRITIS — WAJIB DIPATUHI TANPA PENGECUALIAN
 ▸ DILARANG menggunakan slug generik seperti "ringkasan-dokumen", "catatan-penting", atau "informasi-umum".
 ▸ Contoh BAGUS: "strategi-breakout-high-volume", "resep-rendang-padang", "setup-kubernetes-cluster".
 
+【STRUKTUR RAG_CONTENT】
+Dalam key `rag_content`, susun teks Anda HANYA dengan urutan header berikut:
+
+## 🧠 Core Summary
+[Isi paragraf ringkasan 3-5 kalimat]
+
+## 💡 Key Concepts & Definitions
+[Isi poin-poin definisi. JIKA TIDAK ADA konsep dasar, JANGAN TULIS HEADER INI SAMA SEKALI]
+
+## 📌 Important Details / Application
+[Isi rincian detail. JIKA TIDAK ADA, JANGAN TULIS HEADER INI SAMA SEKALI]
+
+(Opsional: Tambahkan 1-3 Header Dinamis di sini sesuai panduan di atas jika memang ada topik tambahan yang sangat penting. Jika tidak ada, LEWATI.)
+
+## 📝 Original Context & Quotes
+[Kutipan penting. JIKA TIDAK ADA KUTIPAN BERHARGA, JANGAN TULIS HEADER INI SAMA SEKALI. Jangan menulis kalimat seperti "Tidak ada kutipan"]
+
 ═══════════════════════════════════════════
 FORMAT OUTPUT — HANYA JSON MURNI
 ═══════════════════════════════════════════
 
-JANGAN menulis teks apapun sebelum atau sesudah JSON. JANGAN bungkus dalam markdown code block. Langsung mulai dengan karakter {{ dan akhiri dengan }}.
+JANGAN menulis teks apapun sebelum atau sesudah JSON. JANGAN bungkus dalam markdown code block. Langsung mulai dengan karakter { dan akhiri dengan }.
 
-{{
+{
   "filename_slug": "topik-spesifik-3-5-kata",
   "tags": ["domain-utama", "topik-spesifik"],
-  "rag_content": "## 🧠 Core Summary\\n[Paragraf ringkasan PADAT (3-5 kalimat) yang menjelaskan: APA topiknya, MENGAPA penting, dan APA insight/kesimpulan utamanya. Harus self-contained dan kaya kata kunci untuk semantic search.]\\n\\n## 💡 Key Concepts & Definitions\\n[Daftar konsep, istilah kunci, atau ide dasar yang WAJIB dipahami. Format bullet points dengan definisi singkat yang tepat. Hapus bagian ini jika tidak ada konsep yang perlu didefinisikan.]\\n\\n## 📌 Important Details / Application\\n[Rincian teknis, langkah-langkah, studi kasus, data kuantitatif, atau penerapan praktis. Bagian dengan kedalaman paling tinggi. Hapus jika tidak relevan.]\\n\\n## [HEADER DINAMIS 1 — Opsional, beri judul spesifik domain]\\n[Isi konten substantif...]\\n\\n## [HEADER DINAMIS 2 — Opsional, hapus jika topik spesifik sudah habis]\\n[Isi konten substantif...]\\n\\n## [HEADER DINAMIS 3 — Opsional, hapus jika tidak ada topik besar lain]\\n[Isi konten substantif...]\\n\\n## 📝 Original Context & Quotes\\n[Kutipan langsung, pesan kunci, atau pernyataan penting yang perlu dipertahankan kata per kata dari sumber asli. Hapus jika tidak ada kutipan yang layak dipertahankan.]"
-}}
+  "rag_content": "## 🧠 Core Summary\\n[Isi paragraf ringkasan 3-5 kalimat]\\n\\n## 💡 Key Concepts & Definitions\\n[Isi poin-poin definisi]\\n\\n## 📌 Important Details / Application\\n[Isi rincian detail]\\n\\n## 📝 Original Context & Quotes\\n[Kutipan penting]"
+}
 
 ═══════════════════════════════════════════
 
