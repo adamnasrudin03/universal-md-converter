@@ -95,8 +95,7 @@ def process_with_ai(raw_text, model_name='llama3'):
                 token = getattr(msg, 'content', '') if msg else ''
             if token:
                 response_text += token
-                print(token, end='', flush=True)
-        print()  # newline after streaming
+        # print()  # newline after streaming
         try:
             parsed_json = json.loads(response_text)
         except json.JSONDecodeError:
