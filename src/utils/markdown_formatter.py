@@ -1,7 +1,7 @@
 import datetime
 import json
 
-def generate_markdown(title, content, source_type, source_path_or_url, tags=None):
+def generate_markdown(title, content, source_type, source_path_or_url, tags=None, source_context=None):
     """
     Standardize the Markdown output format for all converted files using YAML Frontmatter.
     
@@ -10,6 +10,7 @@ def generate_markdown(title, content, source_type, source_path_or_url, tags=None
     :param source_type: The type of the source (e.g., 'PDF', 'Word', 'Image', 'Video', 'Audio', 'Web Link')
     :param source_path_or_url: The original path or URL of the source.
     :param tags: A list of tags for the document.
+    :param source_context: Information about the page or chapter of the chunk.
     :return: Formatted markdown string.
     """
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -25,12 +26,19 @@ def generate_markdown(title, content, source_type, source_path_or_url, tags=None
     
     safe_source_type = _yaml_safe(source_type)
     safe_source_path = _yaml_safe(source_path_or_url)
+    
+    # Optional source_context injection
+    source_context_yaml = ""
+    if source_context and str(source_context).strip():
+        safe_context = _yaml_safe(source_context)
+        source_context_yaml = f'\nsource_context: "{safe_context}"'
+        
     # Title appears after `# ` so just strip newlines to prevent heading injection
     safe_title = str(title).replace('\n', ' ').replace('\r', '')
     
     markdown_template = f"""---
 source_type: "{safe_source_type}"
-source_path: "{safe_source_path}"
+source_path: "{safe_source_path}"{source_context_yaml}
 tags: {tags_yaml}
 converted_at: "{current_time}"
 ---

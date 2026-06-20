@@ -29,8 +29,10 @@ Teks:
         print(f"Warning: Failed to extract global context: {e}")
         return ""
 
-def recursive_markdown_split(text, max_words=600):
-    """Split text recursively using markdown headers, then paragraphs, then sentences."""
+def recursive_markdown_split(text, max_words=600, overlap_words=50):
+    """Split text recursively using markdown headers, then paragraphs, then sentences.
+    Includes overlap logic when splitting by exact max_words to preserve context.
+    """
     separators = [r'\n# ', r'\n## ', r'\n### ', r'\n\s*\n', r'\.\s']
     
     def _split(t, separator_index):
@@ -38,7 +40,17 @@ def recursive_markdown_split(text, max_words=600):
         if len(t.split()) <= max_words: return [t]
         if separator_index >= len(separators):
             words_list = t.split()
-            return [" ".join(words_list[i:i+max_words]) for i in range(0, len(words_list), max_words)]
+            chunks = []
+            i = 0
+            while i < len(words_list):
+                chunk = " ".join(words_list[i:i+max_words])
+                chunks.append(chunk)
+                if i + max_words >= len(words_list):
+                    break
+                # Advance by max_words - overlap_words, ensure at least 1
+                step = max(1, max_words - overlap_words)
+                i += step
+            return chunks
             
         sep = separators[separator_index]
         is_prefix_sep = '#' in sep
@@ -58,6 +70,7 @@ def recursive_markdown_split(text, max_words=600):
         if current_part: combined_parts.append(current_part)
         combined_parts = [p for p in combined_parts if p.strip()]
         
+        
         final_chunks, current_chunk = [], ""
         for part in combined_parts:
             if len(part.split()) > max_words:
@@ -75,135 +88,114 @@ def recursive_markdown_split(text, max_words=600):
         
     return _split(text, 0)
 
-def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
+def chunk_text_intelligently(text, max_words=600, overlap_words=50):
     """
-    Split text into chunks recursively, then use Ollama to format each chunk.
-    Yields each atomic note structure as soon as it's ready.
+    Split text into chunks recursively, with overlap, without hitting AI yet.
+    Returns a list of raw string chunks.
     """
-    # Guard: check for empty text
     if not text or not text.strip():
-        return
+        return []
     
-    print("\n🌐 Extracting Global Context...", flush=True)
-    global_context = extract_global_context(text, model_name)
-    if global_context:
-        print(f"Context: {global_context}")
-        global_context_block = f"\n[Konteks Global Dokumen: {global_context}]\n"
-    else:
-        global_context_block = ""
-    
-    # Recursive chunking
-    chunks = recursive_markdown_split(text, max_words)
-    print(f"📦 Ditemukan {len(chunks)} chunk untuk diproses.", flush=True)
-    
-    used_filenames = set()
-    
-    for idx, chunk in enumerate(chunks):
-        filename = f"{base_name}-part-{idx+1}.md"
-        formatted_content = chunk
-        final_tags = []
-        
-        try:
-            # Prompt the local LLM
-            prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(chunk, 4000))
-            
-            print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
-            
-            response = ollama.chat(model=model_name, messages=[
-                {'role': 'user', 'content': prompt}
-            ], format='json', stream=True, options={'temperature': 0.0})
-            
-            response_text = ""
-            for stream_chunk in response:
-                # Handle both dict and object-style responses from ollama-python
-                if isinstance(stream_chunk, dict):
-                    token = stream_chunk.get('message', {}).get('content', '')
-                else:
-                    msg = getattr(stream_chunk, 'message', None)
-                    token = getattr(msg, 'content', '') if msg else ''
-                if token:
-                    response_text += token
-                    print(token, end='', flush=True)
-            
-            print("\n✅ Selesai memproses chunk.")
-            
-            # Since we forced format='json', we should be able to parse it directly
-            try:
-                parsed_json = json.loads(response_text)
-            except json.JSONDecodeError:
-                # Fallback regex if LLM still wraps in markdown blocks
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                if json_match:
-                    try:
-                        parsed_json = json.loads(json_match.group(0))
-                    except json.JSONDecodeError:
-                        raise Exception("Regex matched but still not valid JSON") # pragma: no cover
-                else:
-                    raise Exception("Valid JSON not found in LLM response") # pragma: no cover
-            
-            # Extract filename (guard against null from LLM)
-            slug = parsed_json.get("filename_slug", "") or ""
-            if not isinstance(slug, str): # pragma: no cover
-                slug = str(slug)
-            slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
-            slug = re.sub(r'[\s]+', '-', slug)
-            slug = re.sub(r'-+', '-', slug).strip('-')  # Collapse multiple hyphens
-            if slug: # pragma: no cover
-                filename = f"{base_name}-{slug}.md"
-            
-            # Extract content (guard against null from LLM)
-            rag_content = parsed_json.get("rag_content", "") or ""
-            
-            # If the LLM returned a nested dict instead of a markdown string, convert it
-            if isinstance(rag_content, dict):
-                rag_parts = []
-                for k, v in rag_content.items():
-                    if isinstance(v, str):
-                        rag_parts.append(f"{k}\n{v}")
-                    else:
-                        rag_parts.append(f"{k}\n{json.dumps(v, ensure_ascii=False)}") # pragma: no cover
-                rag_content = "\n\n".join(rag_parts)
-            elif not isinstance(rag_content, str): # pragma: no cover
-                rag_content = str(rag_content)
+    chunks = recursive_markdown_split(text, max_words, overlap_words)
+    return chunks
 
-            if rag_content.strip(): # pragma: no cover
-                formatted_content = rag_content
-            
-            # Extract tags (guard against null from LLM)
-            tags_list = parsed_json.get("tags", []) or []
-            if tags_list and isinstance(tags_list, list):
-                # Filter only valid string tags and sanitize to kebab-case
-                valid_tags = []
-                for t in tags_list:
-                    if t is not None:
-                        t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
-                        t_str = re.sub(r'[\s]+', '-', t_str)
-                        t_str = re.sub(r'-+', '-', t_str).strip('-')
-                        if t_str:
-                            valid_tags.append(t_str)
-                if valid_tags:
-                    final_tags = valid_tags
-                
-        except Exception as e:
-            # Fallback if parsing fails or Ollama is off
-            print(f"Warning: Chunk {idx+1} failed AI processing ({str(e)}). Using raw text.")
-            # We don't 'pass' here, we just let it use the fallback formatted_content (raw chunk)
-
-        # Prevent any filename collision (both from AI slug or fallback)
-        # Snapshot base_filename ONCE before the loop, so counter increments cleanly
-        # without cascading suffixes like name-slug-1-2-3.md
-        base_filename = filename
-        stem = base_filename[:-3] if base_filename.endswith(".md") else base_filename
-        counter = 1
-        while filename in used_filenames:
-            filename = f"{stem}-{counter}.md"
-            counter += 1
+def process_chunk_with_ai(chunk, chunk_index, total_chunks, global_context_block, base_name, model_name):
+    """
+    Processes a single raw text chunk with Ollama using native JSON Schema.
+    Returns a dict containing filename, content, tags, and source_context.
+    """
+    filename = f"{base_name}-part-{chunk_index+1}.md"
+    formatted_content = chunk
+    final_tags = []
+    source_context = ""
+    
+    try:
+        # Prompt the local LLM
+        prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(chunk, 4000))
         
-        used_filenames.add(filename)
-        yield {
-            "filename": filename,
-            "content": formatted_content,
-            "raw_chunk": chunk,
-            "tags": final_tags
+        print(f"\n⏳ Memproses chunk {chunk_index+1} dari {total_chunks} menggunakan AI ({model_name})...", flush=True)
+        
+        # Define JSON schema for native structured output
+        schema = {
+            "type": "object",
+            "properties": {
+                "filename_slug": {"type": "string"},
+                "source_context": {"type": "string"},
+                "rag_content": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["filename_slug", "source_context", "rag_content", "tags"]
         }
+        
+        response = ollama.chat(model=model_name, messages=[
+            {'role': 'user', 'content': prompt}
+        ], format=schema, stream=False, options={'temperature': 0.0})
+        
+        if isinstance(response, dict):
+            response_text = response.get('message', {}).get('content', '')
+        else:
+            msg = getattr(response, 'message', None)
+            response_text = getattr(msg, 'content', '') if msg else ''
+            
+        print(f"✅ Selesai memproses chunk {chunk_index+1}.")
+        
+        parsed_json = json.loads(response_text)
+        
+        # Extract filename slug
+        slug = parsed_json.get("filename_slug", "") or ""
+        if not isinstance(slug, str): # pragma: no cover
+            slug = str(slug)
+        slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
+        slug = re.sub(r'[\s]+', '-', slug)
+        slug = re.sub(r'-+', '-', slug).strip('-')
+        if slug:
+            filename = f"{base_name}-{slug}.md"
+            
+        # Extract source context
+        src = parsed_json.get("source_context", "")
+        if src and isinstance(src, str) and src.strip() and src.strip().lower() not in ["none", "null", "n/a", "unknown"]:
+            source_context = f"Bagian {chunk_index+1} dari {total_chunks} | {src.strip()}"
+        else:
+            source_context = f"Bagian {chunk_index+1} dari {total_chunks}"
+        
+        # Extract content
+        rag_content = parsed_json.get("rag_content", "") or ""
+        if isinstance(rag_content, dict):
+            rag_parts = []
+            for k, v in rag_content.items():
+                if isinstance(v, str):
+                    rag_parts.append(f"{k}\n{v}")
+                else:
+                    rag_parts.append(f"{k}\n{json.dumps(v, ensure_ascii=False)}")
+            rag_content = "\n\n".join(rag_parts)
+        elif not isinstance(rag_content, str):
+            rag_content = str(rag_content)
+
+        if rag_content.strip():
+            formatted_content = rag_content
+        
+        # Extract tags
+        tags_list = parsed_json.get("tags", []) or []
+        if tags_list and isinstance(tags_list, list):
+            valid_tags = []
+            for t in tags_list:
+                if t is not None:
+                    t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
+                    t_str = re.sub(r'[\s]+', '-', t_str)
+                    t_str = re.sub(r'-+', '-', t_str).strip('-')
+                    if t_str:
+                        valid_tags.append(t_str)
+            if valid_tags:
+                final_tags = valid_tags
+            
+    except Exception as e:
+        print(f"Warning: Chunk {chunk_index+1} failed AI processing ({str(e)}). Using raw text.")
+
+    return {
+        "filename": filename,
+        "content": formatted_content,
+        "raw_chunk": chunk,
+        "tags": final_tags,
+        "source_context": source_context
+    }
 

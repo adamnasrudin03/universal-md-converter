@@ -1,14 +1,14 @@
 import argparse
 import os
+import sys
 import urllib.parse
 import re
 import ollama
+import concurrent.futures
 from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link, convert_youtube
 from utils.markdown_formatter import generate_markdown
-from utils.chunking import chunk_text_intelligently
-from utils.text_helpers import get_recommended_model, clean_raw_text
-
-
+from utils.chunking import chunk_text_intelligently, process_chunk_with_ai, extract_global_context
+from utils.text_helpers import get_recommended_model, clean_raw_text, get_recommended_concurrency, check_system_requirements
 
 def ensure_model_installed(model_name):
     """Checks if the Ollama model is available locally, and pulls it if not."""
@@ -127,60 +127,143 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
     # Clean raw text to optimize tokens and improve LLM output
     content = clean_raw_text(content)
         
-    print("Splitting text into Atomic Notes intelligently...")
-    atomic_notes_generator = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)
+    print("Splitting text into chunks...")
+    raw_chunks = chunk_text_intelligently(content, max_words=600, overlap_words=50)
+    total_chunks = len(raw_chunks)
     
+    if total_chunks == 0:
+        print("Warning: No chunks generated (text may be empty).")
+        return
+        
+    print(f"📦 Ditemukan {total_chunks} chunk untuk diproses.", flush=True)
+    
+    print("\n🌐 Extracting Global Context...", flush=True)
+    global_context = extract_global_context(content, model_name)
+    if global_context:
+        print(f"Context: {global_context}")
+        global_context_block = f"\n[Konteks Global Dokumen: {global_context}]\n"
+    else:
+        global_context_block = ""
+        
     # Ensure output directory exists and create a sub-directory for the specific source
     source_outdir = os.path.join(outdir, base_title)
     os.makedirs(source_outdir, exist_ok=True)
     
-    # Resolve cross-file filename collisions in batch mode
     if global_used_filenames is None:
         global_used_filenames = set()
     
-    generated_count = 0
-    for note in atomic_notes_generator:
-        generated_count += 1
-        filename = note["filename"]
-        chunk_content = note["content"]
-        raw_chunk_content = note.get("raw_chunk", "")
-        tags = note.get("tags", [])
-        
-        # Guard: prevent overwriting a file produced by a prior source in batch mode
-        stem = filename[:-3] if filename.endswith(".md") else filename
-        counter = 1
-        while filename in global_used_filenames:
-            filename = f"{stem}-{counter}.md"
-            counter += 1
-        global_used_filenames.add(filename)
-        
-        # Format to markdown
-        final_markdown = generate_markdown(
-            title=filename.replace('.md', ''), 
-            content=chunk_content, 
-            source_type=source_type, 
-            source_path_or_url=source,
-            tags=tags
-        )
-        
-        # Write to output directory
-        filepath = os.path.join(source_outdir, filename)
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(final_markdown)
+    # Pre-dump chunks
+    for i, chunk in enumerate(raw_chunks):
+        raw_filepath = os.path.join(source_outdir, f"{base_title}-part-{i+1}.raw.txt")
+        if not os.path.exists(raw_filepath):
+            with open(raw_filepath, "w", encoding="utf-8") as f:
+                f.write(chunk)
+                
+    # Detect resume state
+    pending_indices = []
+    existing_files = set(os.listdir(source_outdir))
+    for i in range(total_chunks):
+        # If any markdown file has prefix `base_title-part-{i+1}-` it means it's done
+        prefix = f"{base_title}-part-{i+1}-"
+        is_done = any(f.startswith(prefix) and f.endswith(".md") for f in existing_files)
+        if not is_done:
+            pending_indices.append(i)
             
-        # Write the raw chunk for validation/reconvert fallback
-        raw_filepath = f"{filepath}.raw.txt"
-        with open(raw_filepath, "w", encoding="utf-8") as f:
-            f.write(raw_chunk_content)
-            
-        print(f"Saved atomic note: {filepath}")
+    if not pending_indices:
+        print(f"✅ All {total_chunks} chunks already processed. Skipping.")
+        return
         
-    if generated_count == 0:
-        print("Warning: No atomic notes were generated (text may be empty).")
-    else:
-        print(f"\nSuccess! Generated {generated_count} atomic notes in '{source_outdir}'")
+    print(f"Resume logic: {len(pending_indices)} out of {total_chunks} chunks remaining.")
+    
+    # Process Concurrency
+    concurrency = get_recommended_concurrency()
+    generated_count = total_chunks - len(pending_indices)
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+        future_to_idx = {
+            executor.submit(
+                process_chunk_with_ai, 
+                raw_chunks[i], 
+                i, 
+                total_chunks, 
+                global_context_block, 
+                base_title, 
+                model_name
+            ): i for i in pending_indices
+        }
+        
+        futures_set = set(future_to_idx.keys())
+        
+        while futures_set:
+            try:
+                done, not_done = concurrent.futures.wait(futures_set, return_when=concurrent.futures.FIRST_COMPLETED)
+                for future in done:
+                    futures_set.remove(future)
+                    idx = future_to_idx[future]
+                    try:
+                        note = future.result()
+                        generated_count += 1
+                        filename = note["filename"]
+                        chunk_content = note["content"]
+                        tags = note.get("tags", [])
+                        source_context = note.get("source_context", "")
+                        
+                        # Collision check
+                        stem = filename[:-3] if filename.endswith(".md") else filename
+                        counter = 1
+                        while filename in global_used_filenames:
+                            filename = f"{stem}-{counter}.md"
+                            counter += 1
+                        global_used_filenames.add(filename)
+                        
+                        final_markdown = generate_markdown(
+                            title=filename.replace('.md', ''), 
+                            content=chunk_content, 
+                            source_type=source_type, 
+                            source_path_or_url=source,
+                            tags=tags,
+                            source_context=source_context
+                        )
+                        
+                        filepath = os.path.join(source_outdir, filename)
+                        with open(filepath, "w", encoding="utf-8") as f:
+                            f.write(final_markdown)
+                            
+                        # Keep standard suffix for reconvert script compatibility
+                        raw_filepath = f"{filepath}.raw.txt"
+                        with open(raw_filepath, "w", encoding="utf-8") as f:
+                            f.write(note["raw_chunk"])
+                            
+                        print(f"Saved atomic note: {filepath}")
+                        
+                    except Exception as exc:
+                        print(f"Chunk {idx+1} generated an exception: {exc}")
+                        
+            except KeyboardInterrupt:
+                print("\n\n⚠️  Process Paused. Do you want to (r)esume, (s)ave & exit safely, or (q)uit immediately? [r/s/q]: ", end="", flush=True)
+                try:
+                    ans = sys.stdin.readline().strip().lower()
+                except Exception:
+                    ans = 's' # default to save if stdin fails
+                    
+                if ans == 's':
+                    print("🛑 Cancelling pending tasks and waiting for running tasks to finish...")
+                    for f in futures_set:
+                        f.cancel()
+                    executor.shutdown(wait=True)
+                    print(f"Graceful exit complete. Run the same command again to resume.")
+                    sys.exit(0)
+                elif ans == 'q':
+                    print("🛑 Quitting immediately.")
+                    os._exit(1)
+                else:
+                    print("▶️  Resuming process...")
+                    
+    print(f"\nSuccess! Generated {generated_count} atomic notes in '{source_outdir}'")
 
 def main():
+    check_system_requirements()
+    
     parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")
     parser.add_argument("source", help="Path to the local file, directory, or URL to convert")
     parser.add_argument("-o", "--outdir", help="Output directory to save atomic notes", default="./output_notes")

@@ -48,34 +48,53 @@ class TestMainCLI:
 
     @patch('src.main.convert_link')
     @patch('src.main.chunk_text_intelligently')
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
     @patch('src.main.generate_markdown')
     @patch('src.main.os.makedirs')
+    @patch('src.main.os.listdir')
     @patch('builtins.open', new_callable=MagicMock)
-    def test_process_source_url(self, mock_open, mock_makedirs, mock_gen, mock_chunk, mock_convert):
+    def test_process_source_url(self, mock_open, mock_listdir, mock_makedirs, mock_gen, mock_ctx, mock_ai, mock_chunk, mock_convert):
         mock_convert.return_value = "URL text"
-        mock_chunk.return_value = [{"filename": "url.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_listdir.return_value = []
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "url.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         mock_gen.return_value = "MD content"
         
         process_source("http://example.com", "outdir", "model")
         mock_convert.assert_called_once()
         mock_chunk.assert_called_once()
+        mock_ai.assert_called_once()
         mock_gen.assert_called_once()
         mock_open.assert_called()
 
     @patch('src.main.convert_youtube')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_youtube(self, mock_chunk, mock_convert):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_youtube(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert):
         mock_convert.return_value = "YT text"
-        mock_chunk.return_value = [{"filename": "yt.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_listdir.return_value = []
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "yt.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("https://youtube.com/watch?v=123", "outdir", "model")
             mock_convert.assert_called_once()
 
     @patch('src.main.convert_ig_link')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_ig(self, mock_chunk, mock_convert):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_ig(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert):
         mock_convert.return_value = "IG text"
-        mock_chunk.return_value = [{"filename": "ig.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_listdir.return_value = []
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "ig.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("https://instagram.com/p/123", "outdir", "model")
             mock_convert.assert_called_once()
@@ -89,10 +108,16 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_pdf')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_file_pdf(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_file_pdf(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
+        mock_listdir.return_value = []
         mock_convert.return_value = "PDF text"
-        mock_chunk.return_value = [{"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("file.pdf", "outdir", "model")
             mock_convert.assert_called_once()
@@ -100,10 +125,16 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_docx')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_file_docx(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_file_docx(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
+        mock_listdir.return_value = []
         mock_convert.return_value = "DOCX text"
-        mock_chunk.return_value = [{"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("file.docx", "outdir", "model")
             mock_convert.assert_called_once()
@@ -111,10 +142,16 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_image')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_file_image(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_file_image(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
+        mock_listdir.return_value = []
         mock_convert.return_value = "Image text"
-        mock_chunk.return_value = [{"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("file.png", "outdir", "model")
             mock_convert.assert_called_once()
@@ -122,10 +159,16 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_media')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_file_audio(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_file_audio(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
+        mock_listdir.return_value = []
         mock_convert.return_value = "Audio text"
-        mock_chunk.return_value = [{"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("file.mp3", "outdir", "model")
             mock_convert.assert_called_once_with("file.mp3", is_video=False)
@@ -133,10 +176,16 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_media')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_file_video(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.process_chunk_with_ai')
+    @patch('src.main.extract_global_context')
+    @patch('src.main.os.listdir')
+    def test_process_source_file_video(self, mock_listdir, mock_ctx, mock_ai, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
+        mock_listdir.return_value = []
         mock_convert.return_value = "Video text"
-        mock_chunk.return_value = [{"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}]
+        mock_ctx.return_value = "global context"
+        mock_chunk.return_value = ["raw"]
+        mock_ai.return_value = {"filename": "doc.md", "content": "RAG", "raw_chunk": "raw", "tags": []}
         with patch('builtins.open', new_callable=MagicMock):
             process_source("file.mp4", "outdir", "model")
             mock_convert.assert_called_once_with("file.mp4", is_video=True)
@@ -166,9 +215,11 @@ class TestMainCLI:
     @patch('src.main.os.path.exists')
     @patch('src.main.convert_pdf')
     @patch('src.main.chunk_text_intelligently')
-    def test_process_source_no_atomic_notes(self, mock_chunk, mock_convert, mock_exists):
+    @patch('src.main.extract_global_context')
+    def test_process_source_no_atomic_notes(self, mock_ctx, mock_chunk, mock_convert, mock_exists):
         mock_exists.return_value = True
         mock_convert.return_value = "PDF text"
+        mock_ctx.return_value = "global context"
         mock_chunk.return_value = [] # Empty notes
         # Should abort early
         process_source("file.pdf", "outdir", "model")

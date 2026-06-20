@@ -5,7 +5,7 @@ import json
 import sys
 
 from utils.prompts import RAG_EXTRACTION_PROMPT
-from utils.text_helpers import safe_truncate, get_recommended_model
+from utils.text_helpers import safe_truncate, get_recommended_model, check_system_requirements
 from utils.markdown_formatter import generate_markdown
 from utils.chunking import extract_global_context
 
@@ -274,6 +274,8 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 break
 
 if __name__ == "__main__":
+    check_system_requirements()
+    
     parser = argparse.ArgumentParser(description="Mencari file yang gagal divalidasi dan meng-convert ulangnya dengan AI.")
     parser.add_argument("path", help="Path direktori output (contoh: output_notes/)")
     parser.add_argument("--llm-validate", action="store_true", help="Gunakan mode LLM untuk mencari file yang gagal")

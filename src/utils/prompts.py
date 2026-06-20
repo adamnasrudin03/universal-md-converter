@@ -70,6 +70,11 @@ ATURAN KRITIS — WAJIB DIPATUHI TANPA PENGECUALIAN
 ▸ DILARANG menggunakan slug generik seperti "ringkasan-dokumen", "catatan-penting", atau "informasi-umum".
 ▸ Contoh BAGUS: "strategi-breakout-high-volume", "resep-rendang-padang", "setup-kubernetes-cluster".
 
+【SOURCE CONTEXT (INFO HALAMAN/BAB)】
+▸ Identifikasi dan ekstrak penanda lokasi fisik teks ini jika tersedia (misalnya: "Page 2", "Bab 1: Pendahuluan", "Chapter 3").
+▸ Jika teks mentah mengandung tulisan seperti `## Page X`, ekstrak X sebagai "Page X".
+▸ Jika tidak ada penanda lokasi sama sekali, kembalikan string kosong "".
+
 【STRUKTUR RAG_CONTENT】
 Dalam key `rag_content`, susun teks Anda HANYA dengan urutan header berikut:
 
@@ -89,11 +94,13 @@ Dalam key `rag_content`, susun teks Anda HANYA dengan urutan header berikut:
 
 【FEW-SHOT EXAMPLE / CONTOH EKSEKUSI】
 Teks mentah:
-"Dalam laporan Q3 2023, pendapatan perusahaan naik 15% menjadi Rp 2,5 Triliun. Jumlah pengguna aktif harian (DAU) mencapai 1.2 juta. CEO menyatakan, 'Ini adalah kuartal terbaik kami'."
+"## Page 15
+Dalam laporan Q3 2023, pendapatan perusahaan naik 15% menjadi Rp 2,5 Triliun. Jumlah pengguna aktif harian (DAU) mencapai 1.2 juta. CEO menyatakan, 'Ini adalah kuartal terbaik kami'."
 
 Output JSON Ideal:
 {
   "filename_slug": "laporan-keuangan-q3-2023",
+  "source_context": "Page 15",
   "tags": ["bisnis", "laporan-keuangan", "q3-2023"],
   "rag_content": "## 🧠 Core Summary\\nPada kuartal ketiga (Q3) 2023, perusahaan mencatat peningkatan pendapatan sebesar 15% hingga mencapai Rp 2,5 Triliun, didorong oleh pertumbuhan pengguna aktif harian (DAU) sebanyak 1.2 juta pengguna.\\n\\n## 📌 Important Details / Application\\n* **Pendapatan:** Naik 15% menjadi Rp 2,5 Triliun.\\n* **DAU:** 1.2 juta pengguna aktif harian.\\n\\n## 📝 Original Context & Quotes\\n> 'Ini adalah kuartal terbaik kami' — CEO"
 }
@@ -102,10 +109,11 @@ Output JSON Ideal:
 FORMAT OUTPUT — HANYA JSON MURNI
 ═══════════════════════════════════════════
 
-JANGAN menulis teks apapun sebelum atau sesudah JSON. JANGAN bungkus dalam markdown code block. Langsung mulai dengan karakter { dan akhiri dengan }.
+JANGAN menulis teks apapun sebelum atau sesudah JSON. Anda diwajibkan untuk mengembalikan JSON object dengan skema berikut:
 
 {
   "filename_slug": "topik-spesifik-3-5-kata",
+  "source_context": "Page X atau Bab Y (opsional)",
   "tags": ["domain-utama", "topik-spesifik"],
   "rag_content": "## 🧠 Core Summary\\n[Isi paragraf ringkasan 3-5 kalimat]\\n\\n## 💡 Key Concepts & Definitions\\n[Isi poin-poin definisi]\\n\\n## 📌 Important Details / Application\\n[Isi rincian detail]\\n\\n## 📝 Original Context & Quotes\\n[Kutipan penting]"
 }
@@ -115,3 +123,4 @@ JANGAN menulis teks apapun sebelum atau sesudah JSON. JANGAN bungkus dalam markd
 Teks mentah untuk diekstrak:
 {text_chunk}
 """
+

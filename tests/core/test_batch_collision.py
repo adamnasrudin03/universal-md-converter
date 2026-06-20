@@ -37,13 +37,17 @@ class TestBatchFilenameCollision(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_outdir)
 
+    @patch('main.extract_global_context')
+    @patch('main.process_chunk_with_ai')
     @patch('main.chunk_text_intelligently')
     @patch('main.convert_pdf')
-    def test_single_file_no_collision_needed(self, mock_pdf, mock_chunk):
+    def test_single_file_no_collision_needed(self, mock_pdf, mock_chunk, mock_ai, mock_ctx):
         """Single file call should work normally with no collision guard needed."""
         from main import process_source
+        mock_ctx.return_value = "global context"
         mock_pdf.return_value = "Valid content here for testing purposes."
-        mock_chunk.return_value = [_make_note("doc-summary.md")]
+        mock_chunk.return_value = ["dummy chunk"]
+        mock_ai.return_value = _make_note("doc-summary.md", raw_chunk="dummy chunk")
 
         fd, path = tempfile.mkstemp(suffix='.pdf')
         os.close(fd)
@@ -55,16 +59,20 @@ class TestBatchFilenameCollision(unittest.TestCase):
         self.assertEqual(len(output_files), 1)
         self.assertIn("doc-summary.md", output_files)
 
+    @patch('main.extract_global_context')
+    @patch('main.process_chunk_with_ai')
     @patch('main.chunk_text_intelligently')
     @patch('main.convert_pdf')
-    def test_shared_set_prevents_overwrite_in_batch(self, mock_pdf, mock_chunk):
+    def test_shared_set_prevents_overwrite_in_batch(self, mock_pdf, mock_chunk, mock_ai, mock_ctx):
         """Two process_source calls with shared global_used_filenames should not
         produce files with the same name (second gets a counter suffix)."""
         from main import process_source
 
+        mock_ctx.return_value = "global context"
+
         mock_pdf.return_value = "Valid content here for testing purposes."
-        # Both files would produce the same filename slug
-        mock_chunk.return_value = [_make_note("report-summary.md")]
+        mock_chunk.return_value = ["dummy chunk"]
+        mock_ai.return_value = _make_note("report-summary.md", raw_chunk="dummy chunk")
 
         fd1, path1 = tempfile.mkstemp(suffix='.pdf')
         os.close(fd1)
@@ -78,22 +86,24 @@ class TestBatchFilenameCollision(unittest.TestCase):
         process_source(path2, self.test_outdir, "llama3", global_used_filenames=shared)
 
         output_files = _get_all_md_files(self.test_outdir)
-        # Both files should exist but with different names
         self.assertEqual(len(output_files), 2)
-        # Original and a counter-suffixed version
         self.assertIn("report-summary.md", output_files)
-        # The second should have been renamed to avoid collision
         self.assertTrue(any(f != "report-summary.md" for f in output_files))
 
+    @patch('main.extract_global_context')
+    @patch('main.process_chunk_with_ai')
     @patch('main.chunk_text_intelligently')
     @patch('main.convert_pdf')
-    def test_without_shared_set_second_call_overwrites(self, mock_pdf, mock_chunk):
+    def test_without_shared_set_second_call_overwrites(self, mock_pdf, mock_chunk, mock_ai, mock_ctx):
         """Without a shared set, the second call to process_source WILL overwrite
         the first if they produce the same filename (demonstrates the problem)."""
         from main import process_source
 
+        mock_ctx.return_value = "global context"
+
         mock_pdf.return_value = "Valid content here."
-        mock_chunk.return_value = [_make_note("collision-file.md")]
+        mock_chunk.return_value = ["dummy chunk"]
+        mock_ai.return_value = _make_note("collision-file.md", raw_chunk="dummy chunk")
 
         fd1, path1 = tempfile.mkstemp(suffix='.pdf')
         os.close(fd1)
@@ -106,19 +116,22 @@ class TestBatchFilenameCollision(unittest.TestCase):
         process_source(path1, self.test_outdir, "llama3")
         process_source(path1, self.test_outdir, "llama3")
 
-        # Without dedup, both write to the same file (only 1 file on disk)
         output_files = _get_all_md_files(self.test_outdir)
-        # There will be exactly 1 unique .md file because the second overwrote the first
         self.assertEqual(len(output_files), 1)
 
+    @patch('main.extract_global_context')
+    @patch('main.process_chunk_with_ai')
     @patch('main.chunk_text_intelligently')
     @patch('main.convert_pdf')
-    def test_counter_suffix_format(self, mock_pdf, mock_chunk):
+    def test_counter_suffix_format(self, mock_pdf, mock_chunk, mock_ai, mock_ctx):
         """Collision counter should produce stem-1.md, stem-2.md format."""
         from main import process_source
 
+        mock_ctx.return_value = "global context"
+
         mock_pdf.return_value = "Valid content."
-        mock_chunk.return_value = [_make_note("topic-overview.md")]
+        mock_chunk.return_value = ["dummy chunk"]
+        mock_ai.return_value = _make_note("topic-overview.md", raw_chunk="dummy chunk")
 
         shared = set()
         paths = []
