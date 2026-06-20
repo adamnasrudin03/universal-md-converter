@@ -20,6 +20,8 @@ REQUIRED_SECTIONS = [
     r"## 📝 Original Context & Quotes"
 ]
 
+MIN_SCORE_THRESHOLD = int(os.environ.get("MIN_SCORE", 85))
+
 def heuristic_validation(content):
     """Validasi menggunakan aturan regex dasar dan panjang teks."""
     score = 0
@@ -50,7 +52,7 @@ def heuristic_validation(content):
         score += 10 # Bonus for sufficient length (>= 50 words)
         
     score = min(max_score, max(0, score))
-    status = "OK" if score >= 85 else "NEEDS RECONVERT"
+    status = "OK" if score >= MIN_SCORE_THRESHOLD else "NEEDS RECONVERT"
     
     return round(score, 2), status, feedback
 
@@ -79,7 +81,7 @@ Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
   "feedback": ["alasan 1", "alasan 2"]
 }}
 
-Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= 85, atau "NEEDS RECONVERT" jika score < 85.
+Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= {MIN_SCORE_THRESHOLD}, atau "NEEDS RECONVERT" jika score < {MIN_SCORE_THRESHOLD}.
 
 Dokumen untuk dievaluasi:
 {truncated_content}
@@ -116,7 +118,7 @@ Dokumen untuk dievaluasi:
         # Clamp score to valid range and validate status
         score = min(100, max(0, score))
         # Selalu paksa status dihitung ulang dari score untuk menghindari halusinasi LLM
-        status = "OK" if score >= 85 else "NEEDS RECONVERT"
+        status = "OK" if score >= MIN_SCORE_THRESHOLD else "NEEDS RECONVERT"
         feedback = parsed_json.get("feedback", []) or []
         if not isinstance(feedback, list):
             feedback = [str(feedback)]
