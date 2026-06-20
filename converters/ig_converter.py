@@ -46,20 +46,29 @@ def convert_ig_link(url):
         L.download_post(post, target=temp_dir)
         
         # Iterate over downloaded files and run OCR on images
+        # Instaloader creates nested subdirectories inside target, so we must
+        # use os.walk to traverse all levels and find the actual image files.
         content.append("## Text from Images (OCR)\n")
         images_found = False
+        slide_number = 0
         
-        # Sort files to ensure slides are processed in order
-        files = sorted(os.listdir(temp_dir))
-        for filename in files:
-            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                images_found = True
-                filepath = os.path.join(temp_dir, filename)
-                ocr_text = convert_image(filepath)
-                
-                content.append(f"### Slide {filename}\n")
-                content.append(ocr_text)
-                content.append("\n\n")
+        image_files = []
+        for root, dirs, files_in_dir in os.walk(temp_dir):
+            for fname in sorted(files_in_dir):
+                if fname.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    image_files.append(os.path.join(root, fname))
+        
+        # Sort by full path to maintain slide order
+        image_files.sort()
+        
+        for filepath in image_files:
+            images_found = True
+            slide_number += 1
+            ocr_text = convert_image(filepath)
+            
+            content.append(f"### Slide {slide_number}\n")
+            content.append(ocr_text)
+            content.append("\n\n")
                 
         if not images_found:
             content.append("*No image slides found in this post.*")

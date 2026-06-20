@@ -124,9 +124,19 @@ def main():
         print("Error: No content could be extracted from the source. Aborting.")
         return
     # Guard: abort if content starts with a known converter error prefix.
-    # Use specific prefixes ('Error:' / 'Error extracting' / 'Failed to') to avoid
-    # false positives when real document content starts with these common words.
-    if content.startswith("Error:") or content.startswith("Error extracting") or content.startswith("Error transcribing") or content.startswith("Failed to"):
+    # These are the EXACT prefixes returned by our converters — specific enough
+    # to avoid false positives when real document content starts with "Error" etc.
+    _CONVERTER_ERROR_PREFIXES = (
+        "Error extracting PDF:",
+        "Error extracting DOCX:",
+        "Error extracting Image text:",
+        "Error extracting Web Link:",
+        "Error extracting Instagram post:",
+        "Error transcribing media:",
+        "Error: Invalid Instagram URL format.",
+        "Failed to extract audio from video.",
+    )
+    if content.startswith(_CONVERTER_ERROR_PREFIXES):
         print(f"Converter returned an error: {content}")
         return
         

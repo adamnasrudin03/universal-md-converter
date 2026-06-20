@@ -46,8 +46,8 @@ def heuristic_validation(content):
     if len(words) < 50:
         score -= 20
         feedback.append("Content is suspiciously short (under 50 words).")
-    elif len(words) > 50:
-        score += 10 # Bonus for sufficient length
+    else:
+        score += 10 # Bonus for sufficient length (>= 50 words)
         
     score = min(max_score, max(0, score))
     status = "OK" if score >= 80 else "NEEDS RECONVERT"

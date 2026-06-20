@@ -13,6 +13,8 @@ def safe_truncate(text, max_chars):
         return text
     truncated = text[:max_chars]
     last_space = truncated.rfind(' ')
+    # Only break at a space if one exists reasonably close to the end (within 80%).
+    # If no space found (e.g., long URL or base64), just hard-cut at max_chars.
     if last_space > max_chars * 0.8:
         return truncated[:last_space]
     return truncated

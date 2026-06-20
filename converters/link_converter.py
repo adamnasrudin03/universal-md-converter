@@ -18,14 +18,22 @@ def convert_link(url):
         # Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Remove scripts and styles
-        for script_or_style in soup(['script', 'style', 'nav', 'footer', 'header']):
-            script_or_style.extract()
+        # Remove non-content elements
+        for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside',
+                         'form', 'noscript', 'iframe', 'svg']):
+            tag.extract()
 
-        html_content = str(soup)
+        # Prioritize <article> or <main> for the cleanest content.
+        # Fall back to <body> if neither exists, and finally the whole soup.
+        content_root = (
+            soup.find('article')
+            or soup.find('main')
+            or soup.find('body')
+            or soup
+        )
         
         # Convert HTML to Markdown
-        markdown_text = md(html_content, heading_style="ATX")
+        markdown_text = md(str(content_root), heading_style="ATX")
         result = markdown_text.strip()
         if not result:
             return ""
