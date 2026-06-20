@@ -47,6 +47,7 @@ Script ini secara otomatis mendeteksi spesifikasi RAM Mac/PC Anda:
 - Jika RAM **< 16GB**: Sistem otomatis memilih model `llama3.2` (lebih ringan dan cepat).
 
 **Penting:** Jika model yang dipilih belum pernah diinstal di komputer Anda, script ini akan otomatis mendownloadnya dari server Ollama sebelum pemrosesan dimulai!
+*(Versi terbaru script telah dilengkapi dengan berbagai optimasi RAM & CPU, seperti pembatasan ukuran konteks LLM, pembatasan multi-threading Tesseract OCR, dan *auto-resize* gambar besar agar terhindar dari hang atau CPU throttle saat ekstraksi bulk).*
 
 ### 1. Mengonversi Link Instagram atau Website
 Gunakan tanda kutip ganda `""` untuk mengapit URL, terutama jika link mengandung parameter khusus (seperti `?` atau `&`), untuk mencegah *error* di terminal.

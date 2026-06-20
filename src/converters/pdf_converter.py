@@ -32,6 +32,10 @@ def convert_pdf(file_path):
                                 pix = page.get_pixmap(dpi=150)
                                 from PIL import Image
                                 img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                                if hasattr(Image, 'Resampling'):
+                                    img.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+                                else:
+                                    img.thumbnail((2000, 2000), Image.LANCZOS)
                                 img = img.convert('L')
                                 img = ImageEnhance.Contrast(img).enhance(2.0)
                                 
@@ -44,6 +48,14 @@ def convert_pdf(file_path):
                                     page_text = ocr_text
                             except Exception as ocr_e:
                                 print(f"Warning: OCR fallback failed on page {i+1}: {ocr_e}")
+                            finally:
+                                if 'img' in locals():
+                                    try:
+                                        img.close()
+                                    except Exception:
+                                        pass
+                                import gc
+                                gc.collect()
                     
                     if page_text and page_text.strip():
                         text_content.append(f"## Page {i + 1}\n\n{page_text}")
@@ -60,6 +72,11 @@ def convert_pdf(file_path):
                     try:
                         # Extract image of the page
                         img = page.to_image(resolution=150).original
+                        from PIL import Image
+                        if hasattr(Image, 'Resampling'):
+                            img.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+                        else:
+                            img.thumbnail((2000, 2000), Image.LANCZOS)
                         img = img.convert('L')
                         img = ImageEnhance.Contrast(img).enhance(2.0)
                         
@@ -72,6 +89,14 @@ def convert_pdf(file_path):
                             page_text = ocr_text
                     except Exception as ocr_e:
                         print(f"Warning: OCR fallback failed on page {i+1}: {ocr_e}")
+                    finally:
+                        if 'img' in locals():
+                            try:
+                                img.close()
+                            except Exception:
+                                pass
+                        import gc
+                        gc.collect()
                 
                 if page_text and page_text.strip():
                     text_content.append(f"## Page {i + 1}\n\n{page_text}")

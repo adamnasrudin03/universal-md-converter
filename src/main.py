@@ -1,5 +1,9 @@
 import argparse
 import os
+
+# Optimasi Tesseract OCR agar tidak menggunakan seluruh core CPU
+os.environ["OMP_THREAD_LIMIT"] = "1"
+
 import sys
 import urllib.parse
 import re

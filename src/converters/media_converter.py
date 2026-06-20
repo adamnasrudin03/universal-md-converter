@@ -43,7 +43,7 @@ def convert_media(file_path, is_video=False):
         from faster_whisper import WhisperModel
         
         # Load faster-whisper model (int8 compute type is very memory efficient)
-        model = WhisperModel("base", device="cpu", compute_type="int8")
+        model = WhisperModel("base", device="cpu", compute_type="int8", cpu_threads=4)
         segments, _ = model.transcribe(target_audio_path, beam_size=5)
         
         text = " ".join([segment.text for segment in segments]).strip()

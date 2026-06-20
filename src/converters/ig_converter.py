@@ -73,11 +73,13 @@ def convert_ig_link(url):
                 content.append(f"### Slide {slide_number}\n")
                 content.append("*OCR could not extract text from this slide.*")
                 content.append("\n\n")
+                import gc; gc.collect()
                 continue
             
             content.append(f"### Slide {slide_number}\n")
             content.append(ocr_text)
             content.append("\n\n")
+            import gc; gc.collect()
                 
         if not images_found:
             content.append("*No image slides found in this post.*")

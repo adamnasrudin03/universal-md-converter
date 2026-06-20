@@ -124,6 +124,6 @@ def get_recommended_concurrency():
     concurrency = 1
     available_ram_gb = get_available_ram_gb()
     if available_ram_gb >= 8.0:  # If we have 8GB *free* right now, we can run multiple LLM queries
-        concurrency = 3
+        concurrency = 2  # Diturunkan dari 3 ke 2 agar mencegah CPU 100% bottleneck saat multi-thread Ollama
 
     return concurrency

@@ -6,7 +6,13 @@ def convert_image(file_path):
         image = Image.open(file_path)
         
         # Pre-processing untuk meningkatkan akurasi Tesseract pada gambar desain/grafis
-        # 1. Ubah ke Grayscale
+        # 1. Resize gambar raksasa untuk menghemat RAM drastis saat OCR
+        if hasattr(Image, 'Resampling'):
+            image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+        else:
+            image.thumbnail((2000, 2000), Image.LANCZOS)
+            
+        # 2. Ubah ke Grayscale
         image = image.convert('L')
         
         # 2. Tingkatkan Kontras agar teks lebih menonjol dari background
