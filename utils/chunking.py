@@ -85,6 +85,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
                 slug = str(slug)
             slug = re.sub(r'[^a-zA-Z0-9\s-]', '', slug).strip().lower()
             slug = re.sub(r'[\s]+', '-', slug)
+            slug = re.sub(r'-+', '-', slug).strip('-')  # Collapse multiple hyphens
             if slug:
                 filename = f"{base_name}-{slug}.md"
             
@@ -109,8 +110,15 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             # Extract tags (guard against null from LLM)
             tags_list = parsed_json.get("tags", []) or []
             if tags_list and isinstance(tags_list, list):
-                # Filter only valid string tags
-                valid_tags = [str(t) for t in tags_list if t is not None and str(t).strip()]
+                # Filter only valid string tags and sanitize to kebab-case
+                valid_tags = []
+                for t in tags_list:
+                    if t is not None:
+                        t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
+                        t_str = re.sub(r'[\s]+', '-', t_str)
+                        t_str = re.sub(r'-+', '-', t_str).strip('-')
+                        if t_str:
+                            valid_tags.append(t_str)
                 if valid_tags:
                     tags = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
                     formatted_content = tags + formatted_content
@@ -121,11 +129,12 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             # We don't 'pass' here, we just let it use the fallback formatted_content (raw chunk)
 
         # Prevent any filename collision (both from AI slug or fallback)
-        # Use counter on the original base to avoid cascading suffixes like name-1-1-1.md
+        # Snapshot base_filename ONCE before the loop, so counter increments cleanly
+        # without cascading suffixes like name-slug-1-2-3.md
         base_filename = filename
+        stem = base_filename[:-3] if base_filename.endswith(".md") else base_filename
         counter = 1
         while filename in used_filenames:
-            stem = base_filename[:-3] if base_filename.endswith(".md") else base_filename
             filename = f"{stem}-{counter}.md"
             counter += 1
         

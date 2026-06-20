@@ -58,7 +58,10 @@ def llm_validation(content, model_name='llama3'):
     """Validasi komprehensif menggunakan Ollama LLM."""
     if not OLLAMA_AVAILABLE:
         return 0, "ERROR", ["Ollama package is not installed."]
-        
+    
+    # Pre-compute truncation to avoid nested expression inside f-string
+    truncated_content = safe_truncate(content, 2500)
+    
     prompt = f"""
 Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut. 
@@ -67,15 +70,17 @@ Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
 2. Kualitas Konten: Apakah isinya informatif, akurat, dan komprehensif sesuai topik aslinya?
 3. Format: Apakah formatnya rapi dan mudah dibaca oleh manusia maupun AI (RAG-ready)?
 
-Format jawaban HANYA berupa JSON valid:
+Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
 {{
   "score": 85,
-  "status": "OK", // "OK" jika score >= 80, jika kurang gunakan "NEEDS RECONVERT"
+  "status": "OK",
   "feedback": ["alasan 1", "alasan 2"]
 }}
 
+Catatan: "status" harus "OK" jika score >= 80, atau "NEEDS RECONVERT" jika score < 80.
+
 Dokumen untuk dievaluasi:
-{safe_truncate(content, 3000)}
+{truncated_content}
 """
     try:
         response = ollama.chat(model=model_name, messages=[

@@ -63,19 +63,25 @@ def process_with_ai(raw_text, model_name='llama3'):
     Menggunakan Ollama untuk merestrukturisasi raw_text menjadi format JSON RAG.
     Logic ini disamakan dengan chunking.py
     """
-    prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(raw_text, 3000))
+    prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(raw_text, 2500))
     
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format='json')
+        ], format='json', stream=True)
         
-        # Handle both dict and object-style responses from ollama-python
-        if isinstance(response, dict):
-            response_text = response.get('message', {}).get('content', '')
-        else:
-            msg = getattr(response, 'message', None)
-            response_text = getattr(msg, 'content', '') if msg else ''
+        response_text = ""
+        for stream_chunk in response:
+            # Handle both dict and object-style responses from ollama-python
+            if isinstance(stream_chunk, dict):
+                token = stream_chunk.get('message', {}).get('content', '')
+            else:
+                msg = getattr(stream_chunk, 'message', None)
+                token = getattr(msg, 'content', '') if msg else ''
+            if token:
+                response_text += token
+                print(token, end='', flush=True)
+        print()  # newline after streaming
         try:
             parsed_json = json.loads(response_text)
         except json.JSONDecodeError:
@@ -108,8 +114,15 @@ def process_with_ai(raw_text, model_name='llama3'):
         tags_list = parsed_json.get("tags", []) or []
         
         if tags_list and isinstance(tags_list, list):
-            # Filter only valid string tags
-            valid_tags = [str(t) for t in tags_list if t is not None and str(t).strip()]
+            # Filter only valid string tags and sanitize to kebab-case
+            valid_tags = []
+            for t in tags_list:
+                if t is not None:
+                    t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
+                    t_str = re.sub(r'[\s]+', '-', t_str)
+                    t_str = re.sub(r'-+', '-', t_str).strip('-')
+                    if t_str:
+                        valid_tags.append(t_str)
             if valid_tags:
                 tags_str = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
                 rag_content = tags_str + rag_content
