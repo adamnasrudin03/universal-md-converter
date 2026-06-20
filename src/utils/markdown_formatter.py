@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 
 def generate_markdown(title, content, source_type, source_path_or_url, tags=None, source_context=None):
     """
@@ -16,6 +17,37 @@ def generate_markdown(title, content, source_type, source_path_or_url, tags=None
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tags_yaml = json.dumps(tags or [])
     
+    # Normalize standard headers to enforce correct emojis and markdown formatting
+    if content:
+        # Normalize Core Summary
+        content = re.sub(
+            r'^#{0,3}\s*(?:[^\w\s\n]*\s*)?Core Summary\s*$',
+            r'## 🧠 Core Summary',
+            content,
+            flags=re.IGNORECASE | re.MULTILINE
+        )
+        # Normalize Key Concepts & Definitions
+        content = re.sub(
+            r'^#{0,3}\s*(?:[^\w\s\n]*\s*)?Key Concepts(?:\s*&\s*Definitions)?\s*$',
+            r'## 💡 Key Concepts & Definitions',
+            content,
+            flags=re.IGNORECASE | re.MULTILINE
+        )
+        # Normalize Important Details / Application
+        content = re.sub(
+            r'^#{0,3}\s*(?:[^\w\s\n]*\s*)?Important Details(?:\s*/\s*Application)?\s*$',
+            r'## 📌 Important Details / Application',
+            content,
+            flags=re.IGNORECASE | re.MULTILINE
+        )
+        # Normalize Original Context & Quotes
+        content = re.sub(
+            r'^#{0,3}\s*(?:[^\w\s\n]*\s*)?Original Context(?:\s*&\s*Quotes)?\s*$',
+            r'## 📝 Original Context & Quotes',
+            content,
+            flags=re.IGNORECASE | re.MULTILINE
+        )
+
     # Sanitize values for YAML safety — escape embedded quotes and
     # strip newlines so multi-line strings don't break the frontmatter block.
     def _yaml_safe(value):

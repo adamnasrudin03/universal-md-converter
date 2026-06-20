@@ -299,5 +299,69 @@ Text content
         reconvert_directory(temp_dir, use_llm_validation=False, max_retries=1)
         mock_process_ai.assert_called_once()
 
+    def test_generate_markdown_header_normalization(self):
+        """Ensure malformed or emoji-swapped headers are correctly normalized to standard formats."""
+        # Test input with various irregular formatting variations
+        content = """Core Summary
+This is the core summary.
+
+## 🐊 Key Concepts & Definitions
+These are key concepts.
+
+### Important Details
+Some details.
+
+Original Context & Quotes
+> Quote here.
+"""
+        from utils.markdown_formatter import generate_markdown
+        res = generate_markdown(
+            title="Test",
+            content=content,
+            source_type="PDF Document",
+            source_path_or_url="/test.pdf",
+            tags=[]
+        )
+        
+        # Verify all sections are normalized to correct headers and emojis
+        self.assertIn("## 🧠 Core Summary", res)
+        self.assertIn("## 💡 Key Concepts & Definitions", res)
+        self.assertIn("## 📌 Important Details / Application", res)
+        self.assertIn("## 📝 Original Context & Quotes", res)
+        
+        # Ensure malformed elements like 🐊 are stripped/corrected
+        self.assertNotIn("🐊", res)
+        self.assertNotIn("### Important Details", res)
+
+    @patch('ollama.chat')
+    @patch('reconvert.extract_global_context')
+    def test_process_with_ai_non_streaming_dict(self, mock_extract_global, mock_chat):
+        """Verify process_with_ai parses single dict response when stream=False."""
+        mock_extract_global.return_value = ""
+        mock_chat.return_value = {
+            "message": {
+                "content": '{"rag_content": "## 🧠 Core Summary\\nSummary text", "tags": ["tag1", "tag2"]}'
+            }
+        }
+        
+        rag_content, tags = process_with_ai("raw text here", model_name="dummy")
+        self.assertEqual(rag_content, "## 🧠 Core Summary\nSummary text")
+        self.assertEqual(tags, ["tag1", "tag2"])
+
+    @patch('ollama.chat')
+    @patch('reconvert.extract_global_context')
+    def test_process_with_ai_non_streaming_object(self, mock_extract_global, mock_chat):
+        """Verify process_with_ai parses single object response when stream=False."""
+        mock_extract_global.return_value = ""
+        
+        # Mock object response
+        mock_response = MagicMock()
+        mock_response.message.content = '{"rag_content": "## 🧠 Core Summary\\nObject text", "tags": ["tag1"]}'
+        mock_chat.return_value = mock_response
+        
+        rag_content, tags = process_with_ai("raw text here", model_name="dummy")
+        self.assertEqual(rag_content, "## 🧠 Core Summary\nObject text")
+        self.assertEqual(tags, ["tag1"])
+
 if __name__ == '__main__':
     unittest.main()

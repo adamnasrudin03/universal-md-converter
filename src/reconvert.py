@@ -95,22 +95,51 @@ def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
         
     prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(raw_text, 4000))
     
+    schema = {
+        "type": "object",
+        "properties": {
+            "filename_slug": {"type": "string"},
+            "source_context": {"type": "string"},
+            "rag_content": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["filename_slug", "source_context", "rag_content", "tags"]
+    }
+    
     try:
-        response = ollama.chat(model=model_name, messages=[
-            {'role': 'user', 'content': prompt}
-        ], format='json', stream=True, options={'temperature': temperature})
+        response = ollama.chat(
+            model=model_name,
+            messages=[{'role': 'user', 'content': prompt}],
+            format=schema,
+            stream=False,
+            options={'temperature': temperature}
+        )
         
         response_text = ""
-        for stream_chunk in response:
-            # Handle both dict and object-style responses from ollama-python
-            if isinstance(stream_chunk, dict):
-                token = stream_chunk.get('message', {}).get('content', '')
+        if not isinstance(response, (list, tuple)) and hasattr(response, '__iter__') and not isinstance(response, dict) and not hasattr(response, 'message'):
+            # Handle streaming response (backwards compatibility or custom setups)
+            for stream_chunk in response:
+                if isinstance(stream_chunk, dict):
+                    token = stream_chunk.get('message', {}).get('content', '')
+                else:
+                    msg = getattr(stream_chunk, 'message', None)
+                    token = getattr(msg, 'content', '') if msg else ''
+                if token:
+                    response_text += token
+        else:
+            # Handle non-streaming response or mocked responses in unit tests
+            if isinstance(response, list) and len(response) > 0:
+                first_chunk = response[0]
+                if isinstance(first_chunk, dict):
+                    response_text = first_chunk.get('message', {}).get('content', '')
+                else:
+                    msg = getattr(first_chunk, 'message', None)
+                    response_text = getattr(msg, 'content', '') if msg else ''
+            elif isinstance(response, dict):
+                response_text = response.get('message', {}).get('content', '')
             else:
-                msg = getattr(stream_chunk, 'message', None)
-                token = getattr(msg, 'content', '') if msg else ''
-            if token:
-                response_text += token
-        # print()  # newline after streaming
+                msg = getattr(response, 'message', None)
+                response_text = getattr(msg, 'content', '') if msg else ''
         
         # Clean markdown code block syntax if LLM hallucinates it
         clean_response = re.sub(r'^```(?:json)?\n?', '', response_text.strip(), flags=re.IGNORECASE)
