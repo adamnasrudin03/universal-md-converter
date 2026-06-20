@@ -67,10 +67,10 @@ Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Gener
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut.
 Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
 
-1. Struktur (30 poin): Apakah memiliki bagian-bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah bagian yang kosong sudah dihilangkan (bukan diisi "N/A")?
-2. Kualitas RAG (30 poin): Apakah Core Summary self-contained dan kaya kata kunci untuk semantic search? Apakah setiap bagian bermakna jika di-retrieve secara parsial?
-3. Akurasi (20 poin): Apakah isinya terlihat faktual dan konsisten (tidak ada hallucination yang jelas)? Apakah tag dan slug deskriptif dan spesifik (bukan generik)?
-4. Format (20 poin): Apakah formatnya rapi, menggunakan bullet points untuk daftar dan narasi untuk penjelasan? Apakah mudah dibaca oleh manusia maupun AI?
+1. Struktur (25 poin): Apakah memiliki bagian-bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah penggunaan Header Dinamis wajar (maksimal 3)? Apakah bagian kosong sudah dihapus?
+2. Kualitas RAG & Anti-Redundansi (30 poin): Apakah Core Summary kaya kata kunci? Apakah informasi padat dan TIDAK redundan antar bagian? Apakah angka dan fakta dipertahankan akurat?
+3. Formatting & Visualisasi (25 poin): Apakah formatnya rapi (menggunakan Markdown Table jika ada data perbandingan, Numbered List untuk langkah-langkah)? Apakah ada bold untuk kata kunci? Apakah terhindar dari wall-of-text?
+4. Akurasi & Metadata (20 poin): Apakah tag dan slug deskriptif dan spesifik (bukan generik)? Apakah isinya konsisten dan terhindar dari hallucination?
 
 Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
 {{

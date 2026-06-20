@@ -82,7 +82,7 @@ Setiap file akan memiliki nama unik berdasarkan *slug* deskriptif (3-5 kata keba
 - `## 🧠 Core Summary`: Paragraf ringkasan padat (3-5 kalimat) yang kaya kata kunci dan bersifat *self-contained* agar optimal saat diambil via semantic search.
 - `## 💡 Key Concepts & Definitions` (Opsional): Daftar konsep, istilah kunci, atau ide dasar beserta definisi singkatnya dalam format bullet points.
 - `## 📌 Important Details / Application` (Opsional): Rincian teknis, langkah-langkah, data kuantitatif, atau penerapan praktis.
-- `## [HEADER DINAMIS]` (Maksimal 1): Header kontekstual sesuai dengan domain konten asli untuk menampung data substantif spesifik, contohnya:
+- `## [HEADER DINAMIS]` (Maksimal 3): Header kontekstual sesuai dengan domain konten asli untuk menampung data substantif spesifik, contohnya:
   - **Trading**: `## 📈 Trading Setup & Criteria` atau `## 📊 Analisa Teknikal`
   - **Programming**: `## 💻 Code & Implementasi` atau `## 🏗️ Arsitektur Sistem`
   - **Kuliner**: `## 🥘 Bahan & Takaran` atau `## 👨‍🍳 Langkah Memasak`
@@ -127,10 +127,10 @@ make validate DIR="output_notes_ig/"
 
 **2. Validasi Mendalam (Ollama LLM):**
 Menggunakan model AI lokal untuk menilai kualitas tulisan secara mendalam dengan pembagian skor total 100 poin:
-- **Struktur (30 poin)**: Pemeriksaan bagian inti dan penghilangan bagian kosong (bukan diisi "N/A").
-- **Kualitas RAG (30 poin)**: Kepadatan kata kunci di Core Summary dan kemandirian informasi tiap chunk jika di-retrieve secara terpisah (*self-contained*).
-- **Akurasi (20 poin)**: Konsistensi faktual (menghindari halusinasi) serta keunikan slug/tag.
-- **Format (20 poin)**: Kerapian penyajian, penggunaan bullet points untuk daftar, dan narasi untuk penjelasan konseptual.
+- **Struktur (25 poin)**: Pemeriksaan bagian inti, penggunaan header dinamis yang wajar (maks. 3), dan penghilangan bagian kosong.
+- **Kualitas RAG & Anti-Redundansi (30 poin)**: Kepadatan kata kunci di Core Summary, informasi padat, dan tidak mengulang definisi yang sama (*anti-redundancy*).
+- **Formatting & Visualisasi (25 poin)**: Penggunaan *Markdown Table* untuk data statistik, *Numbered/Bullet List*, *bold* untuk kata kunci, dan menghindari *wall-of-text*.
+- **Akurasi & Metadata (20 poin)**: Konsistensi faktual (menghindari halusinasi) serta keunikan slug/tag.
 ```bash
 # Menggunakan Makefile (default ke output_notes/)
 make validate-llm
