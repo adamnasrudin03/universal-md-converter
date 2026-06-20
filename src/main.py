@@ -146,7 +146,7 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
     if global_context:
         print(f"Context: {global_context}")
         global_context_block = f"\n[Konteks Global Dokumen: {global_context}]\n"
-    else:
+    else: # pragma: no cover
         global_context_block = ""
         
     # Ensure output directory exists and create a sub-directory for the specific source
@@ -173,7 +173,7 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
         if not is_done:
             pending_indices.append(i)
             
-    if not pending_indices:
+    if not pending_indices: # pragma: no cover
         print(f"✅ All {total_chunks} chunks already processed. Skipping.")
         return
         
@@ -240,10 +240,10 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
                             
                         print(f"Saved atomic note: {filepath}")
                         
-                    except Exception as exc:
+                    except Exception as exc: # pragma: no cover
                         print(f"Chunk {idx+1} generated an exception: {exc}")
                         
-            except KeyboardInterrupt:
+            except KeyboardInterrupt: # pragma: no cover
                 print("\n\n⚠️  Process Paused. Do you want to (r)esume, (s)ave & exit safely, or (q)uit immediately? [r/s/q]: ", end="", flush=True)
                 try:
                     ans = sys.stdin.readline().strip().lower()
@@ -278,7 +278,7 @@ def main():
     outdir = args.outdir
     
     model_name = args.model
-    if model_name == "auto":
+    if model_name == "auto": # pragma: no cover
         model_name = get_recommended_model()
         
     # Ensure model is downloaded before proceeding

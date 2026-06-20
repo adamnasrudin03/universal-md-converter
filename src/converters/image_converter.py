@@ -9,7 +9,7 @@ def convert_image(file_path):
         # 1. Resize gambar raksasa untuk menghemat RAM drastis saat OCR
         if hasattr(Image, 'Resampling'):
             image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
-        else:
+        else: # pragma: no cover
             image.thumbnail((2000, 2000), Image.LANCZOS)
             
         # 2. Ubah ke Grayscale

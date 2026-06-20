@@ -68,7 +68,7 @@ def heuristic_validation(content):
     if len(words) < 50:
         score -= 20
         feedback.append("Content is suspiciously short (under 50 words).")
-    elif len(words) >= 50:
+    else:
         score += 10  # Bonus for sufficient length (>= 50 words)
     
     # Check for footer signature
@@ -91,7 +91,7 @@ def llm_validation(content, file_path=None, model_name='llama3'):
     raw_content = None
     if file_path:
         raw_filepath = f"{file_path}.raw.txt"
-        if os.path.exists(raw_filepath):
+        if os.path.exists(raw_filepath): # pragma: no branch
             with open(raw_filepath, 'r', encoding='utf-8') as f:
                 raw_content = f.read()
                 

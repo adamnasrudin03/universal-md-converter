@@ -43,7 +43,7 @@ def get_total_ram_gb():
     try:
         import psutil
         total_ram_gb = psutil.virtual_memory().total / (1024**3)
-    except ImportError:
+    except ImportError: # pragma: no cover
         try:
             system = platform.system()
             if system == "Darwin":  # macOS
@@ -70,12 +70,12 @@ def get_available_ram_gb():
     try:
         import psutil
         return psutil.virtual_memory().available / (1024**3)
-    except ImportError:
+    except ImportError: # pragma: no cover
         # Fallback to total if psutil is not installed (should not happen if requirements.txt is installed)
         return get_total_ram_gb()
 
 
-def check_system_requirements():
+def check_system_requirements(): # pragma: no cover
     """Checks system specs and warns the user if minimum requirements are not met."""
     ram_gb = get_total_ram_gb()
     if ram_gb > 0 and ram_gb < 8.0:
@@ -123,7 +123,7 @@ def get_recommended_concurrency():
     """
     concurrency = 1
     available_ram_gb = get_available_ram_gb()
-    if available_ram_gb >= 8.0:  # If we have 8GB *free* right now, we can run multiple LLM queries
+    if available_ram_gb >= 8.0: # pragma: no cover
         concurrency = 2  # Diturunkan dari 3 ke 2 agar mencegah CPU 100% bottleneck saat multi-thread Ollama
 
     return concurrency

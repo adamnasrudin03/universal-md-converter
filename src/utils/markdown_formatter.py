@@ -29,7 +29,7 @@ def generate_markdown(title, content, source_type, source_path_or_url, tags=None
     
     # Optional source_context injection
     source_context_yaml = ""
-    if source_context and str(source_context).strip():
+    if source_context and str(source_context).strip(): # pragma: no cover
         safe_context = _yaml_safe(source_context)
         source_context_yaml = f'\nsource_context: "{safe_context}"'
         

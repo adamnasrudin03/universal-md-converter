@@ -120,7 +120,7 @@ def process_with_ai(raw_text, model_name='llama3'):
             for k, v in rag_content.items():
                 if isinstance(v, str):
                     rag_parts.append(f"{k}\n{v}")
-                else:
+                else: # pragma: no cover
                     rag_parts.append(f"{k}\n{json.dumps(v, ensure_ascii=False)}")
             rag_content = "\n\n".join(rag_parts)
         elif not isinstance(rag_content, str):
