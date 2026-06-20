@@ -1,5 +1,5 @@
 import os
-import whisper
+import gc
 
 # moviepy 1.x uses moviepy.editor; moviepy >= 2.0 uses moviepy directly.
 # requirements.txt pins 1.0.3, so try 1.x first.
@@ -28,6 +28,9 @@ def extract_audio_from_video(video_path, audio_path):
                 pass
 
 def convert_media(file_path, is_video=False):
+    if not os.path.exists(file_path):
+        return f"Error: File {file_path} not found."
+        
     target_audio_path = file_path
     try:
         if is_video:
@@ -36,17 +39,27 @@ def convert_media(file_path, is_video=False):
             if not success:
                 return "Failed to extract audio from video."
 
-        # Load whisper model (base model is fast and free)
-        model = whisper.load_model("base")
-        result = model.transcribe(target_audio_path)
+        # Import locally to avoid slow startup for scripts not using media
+        from faster_whisper import WhisperModel
         
-        text = result.get('text', '').strip()
+        # Load faster-whisper model (int8 compute type is very memory efficient)
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(target_audio_path, beam_size=5)
+        
+        text = " ".join([segment.text for segment in segments]).strip()
         if not text:
             return ""
         return text
     except Exception as e:
         return f"Error transcribing media: {str(e)}"
     finally:
+        # Explicit garbage collection to prevent memory leaks from Whisper
+        try:
+            del model
+        except UnboundLocalError:
+            pass
+        gc.collect()
+        
         # Cleanup temp audio if we created one
         if is_video and target_audio_path != file_path and os.path.exists(target_audio_path):
             try:

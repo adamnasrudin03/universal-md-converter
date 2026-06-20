@@ -242,7 +242,7 @@ class TestDocxConverter(unittest.TestCase):
 class TestMediaConverterCleanup(unittest.TestCase):
     """Tests for media_converter temp file cleanup behavior."""
 
-    @patch('converters.media_converter.whisper.load_model')
+    @patch('faster_whisper.WhisperModel')
     @patch('converters.media_converter.extract_audio_from_video')
     def test_temp_audio_file_cleaned_up_after_success(self, mock_extract, mock_whisper):
         """Temp .wav file should be deleted after successful video transcription."""
@@ -263,7 +263,9 @@ class TestMediaConverterCleanup(unittest.TestCase):
         mock_extract.side_effect = fake_extract
 
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = {'text': 'Hello world transcription'}
+        mock_segment = MagicMock()
+        mock_segment.text = "Hello world transcription"
+        mock_model.transcribe.return_value = ([mock_segment], None)
         mock_whisper.return_value = mock_model
 
         # Patch the temp path to use our pre-created file
@@ -274,13 +276,15 @@ class TestMediaConverterCleanup(unittest.TestCase):
                     # Cleanup should be attempted
                     mock_remove.assert_called()
 
-    @patch('converters.media_converter.whisper.load_model')
+    @patch('faster_whisper.WhisperModel')
     def test_audio_file_no_cleanup_for_non_video(self, mock_whisper):
         """For audio-only input (is_video=False), no temp file should be created/cleaned."""
         from converters.media_converter import convert_media
 
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = {'text': 'Audio transcript here'}
+        mock_segment = MagicMock()
+        mock_segment.text = "Audio transcript here"
+        mock_model.transcribe.return_value = ([mock_segment], None)
         mock_whisper.return_value = mock_model
 
         fd, audio_path = tempfile.mkstemp(suffix='.mp3')

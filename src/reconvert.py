@@ -272,6 +272,10 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             else:
                 print("  ❌ Gagal reconvert (LLM return None).")
                 break
+        
+        # Explicitly collect garbage after finishing one file to free up memory
+        import gc
+        gc.collect()
 
 if __name__ == "__main__":
     check_system_requirements()

@@ -295,8 +295,12 @@ def main():
                     file_path = os.path.join(root, file)
                     print(f"\n--- Processing: {file_path} ---")
                     process_source(file_path, outdir, model_name, batch_used_filenames)
+                    import gc
+                    gc.collect()
     else:
         process_source(source, outdir, model_name)
+        import gc
+        gc.collect()
 
 if __name__ == "__main__":
     main()

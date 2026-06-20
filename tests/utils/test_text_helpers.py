@@ -74,67 +74,53 @@ class TestSafeTruncate(unittest.TestCase):
         self.assertEqual(clean_raw_text(raw), "Line 1\n\nLine 2")
 
 from unittest.mock import patch, MagicMock, mock_open
-from src.utils.text_helpers import get_recommended_model
+from utils.text_helpers import get_recommended_model
 
 class TestGetRecommendedModel(unittest.TestCase):
-    @patch('src.utils.text_helpers.platform.system')
-    @patch('src.utils.text_helpers.subprocess.run')
-    def test_get_recommended_model_mac_large_ram(self, mock_run, mock_system):
-        mock_system.return_value = "Darwin"
-        mock_run.return_value = MagicMock(returncode=0, stdout="34359738368\n") # 32GB
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_mac_large_ram(self, mock_ram):
+        mock_ram.return_value = 32.0
         self.assertEqual(get_recommended_model(), "llama3")
 
-    @patch('src.utils.text_helpers.platform.system')
-    @patch('src.utils.text_helpers.subprocess.run')
-    def test_get_recommended_model_mac_small_ram(self, mock_run, mock_system):
-        mock_system.return_value = "Darwin"
-        mock_run.return_value = MagicMock(returncode=0, stdout="8589934592\n") # 8GB
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_mac_small_ram(self, mock_ram):
+        mock_ram.return_value = 8.0
         self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.platform.system')
-    @patch('src.utils.text_helpers.subprocess.run')
-    def test_get_recommended_model_mac_subprocess_error(self, mock_run, mock_system):
-        mock_system.return_value = "Darwin"
-        mock_run.return_value = MagicMock(returncode=1, stdout="")
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_mac_subprocess_error(self, mock_ram):
+        mock_ram.return_value = 0.0
         self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_exception(self, mock_system):
-        mock_system.side_effect = Exception("General error")
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_exception(self, mock_ram):
+        mock_ram.side_effect = Exception("General error")
         self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_linux_large(self, mock_system):
-        mock_system.return_value = "Linux"
-        mock_open = MagicMock()
-        mock_open.return_value.__enter__.return_value = ["MemTotal:       33554432 kB\n"] # 32GB
-        with patch('builtins.open', mock_open):
-            self.assertEqual(get_recommended_model(), "llama3")
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_linux_large(self, mock_ram):
+        mock_ram.return_value = 32.0
+        self.assertEqual(get_recommended_model(), "llama3")
 
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_linux_16gb(self, mock_system):
-        mock_system.return_value = "Linux"
-        with patch("builtins.open", mock_open(read_data="MemTotal:       16777216 kB\n")) as mock_file:
-            model = get_recommended_model()
-            self.assertEqual(model, "llama3")
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_linux_16gb(self, mock_ram):
+        mock_ram.return_value = 16.0
+        self.assertEqual(get_recommended_model(), "llama3")
 
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_linux_8gb(self, mock_system):
-        mock_system.return_value = "Linux"
-        with patch("builtins.open", mock_open(read_data="MemTotal:       8388608 kB\n")) as mock_file:
-            model = get_recommended_model()
-            self.assertEqual(model, "llama3.2")
-
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_windows(self, mock_system):
-        mock_system.return_value = "Windows"
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_linux_8gb(self, mock_ram):
+        mock_ram.return_value = 8.0
         self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.platform.system')
-    def test_get_recommended_model_linux_no_memtotal(self, mock_system):
-        mock_system.return_value = "Linux"
-        with patch("builtins.open", mock_open(read_data="OtherInfo: 123 kB\nAnotherInfo: 456 kB\n")) as mock_file:
-            self.assertEqual(get_recommended_model(), "llama3.2")
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_windows(self, mock_ram):
+        mock_ram.return_value = 8.0
+        self.assertEqual(get_recommended_model(), "llama3.2")
+
+    @patch('utils.text_helpers.get_total_ram_gb')
+    def test_get_recommended_model_linux_no_memtotal(self, mock_ram):
+        mock_ram.return_value = 0.0
+        self.assertEqual(get_recommended_model(), "llama3.2")
 
 if __name__ == '__main__':
     unittest.main()

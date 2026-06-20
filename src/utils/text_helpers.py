@@ -38,28 +38,41 @@ def safe_truncate(text, max_chars):
 
 
 def get_total_ram_gb():
-    """Returns the total system RAM in GB. Returns 0 if unable to determine."""
+    """Returns the total system RAM in GB using psutil if available, fallback to sysctl/proc."""
     total_ram_gb = 0
     try:
-        system = platform.system()
-        if system == "Darwin":  # macOS
-            res = subprocess.run(
-                ['sysctl', '-n', 'hw.memsize'],
-                capture_output=True, text=True
-            )
-            if res.returncode == 0:
-                total_ram_bytes = int(res.stdout.strip())
-                total_ram_gb = total_ram_bytes / (1024**3)
-        elif system == "Linux":
-            with open('/proc/meminfo', 'r') as f:
-                for line in f:
-                    if 'MemTotal' in line:
-                        kb = int(line.split()[1])
-                        total_ram_gb = kb / (1024**2)
-                        break
-    except Exception:
-        pass
+        import psutil
+        total_ram_gb = psutil.virtual_memory().total / (1024**3)
+    except ImportError:
+        try:
+            system = platform.system()
+            if system == "Darwin":  # macOS
+                res = subprocess.run(
+                    ['sysctl', '-n', 'hw.memsize'],
+                    capture_output=True, text=True
+                )
+                if res.returncode == 0:
+                    total_ram_bytes = int(res.stdout.strip())
+                    total_ram_gb = total_ram_bytes / (1024**3)
+            elif system == "Linux":
+                with open('/proc/meminfo', 'r') as f:
+                    for line in f:
+                        if 'MemTotal' in line:
+                            kb = int(line.split()[1])
+                            total_ram_gb = kb / (1024**2)
+                            break
+        except Exception:
+            pass
     return total_ram_gb
+
+def get_available_ram_gb():
+    """Returns the currently available system RAM in GB using psutil."""
+    try:
+        import psutil
+        return psutil.virtual_memory().available / (1024**3)
+    except ImportError:
+        # Fallback to total if psutil is not installed (should not happen if requirements.txt is installed)
+        return get_total_ram_gb()
 
 
 def check_system_requirements():
@@ -104,13 +117,13 @@ def get_recommended_model():
     return model
 
 def get_recommended_concurrency():
-    """Determines safe concurrency level based on system RAM.
+    """Determines safe concurrency level based on dynamically available system RAM.
     
-    Returns 3 for systems with >= 16GB RAM, otherwise 1 (sequential).
+    Returns 3 for systems with >= 8GB FREE RAM, otherwise 1 (sequential).
     """
     concurrency = 1
-    total_ram_gb = get_total_ram_gb()
-    if total_ram_gb >= 15.5:  # 16GB RAM or more
+    available_ram_gb = get_available_ram_gb()
+    if available_ram_gb >= 8.0:  # If we have 8GB *free* right now, we can run multiple LLM queries
         concurrency = 3
 
     return concurrency

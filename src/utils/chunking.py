@@ -16,7 +16,7 @@ Teks:
 """
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], options={'temperature': 0.0})
+        ], options={'temperature': 0.0, 'num_thread': 4})
         
         if isinstance(response, dict):
             context = response.get('message', {}).get('content', '')
@@ -129,7 +129,7 @@ def process_chunk_with_ai(chunk, chunk_index, total_chunks, global_context_block
         
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format=schema, stream=False, options={'temperature': 0.0})
+        ], format=schema, stream=False, options={'temperature': 0.0, 'num_thread': 4})
         
         if isinstance(response, dict):
             response_text = response.get('message', {}).get('content', '')
