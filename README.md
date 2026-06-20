@@ -74,17 +74,19 @@ Jika Anda tidak ingin menggunakan model auto-deteksi, Anda bisa memaksakan (over
 python main.py "https://www.cnbc.com/trading-news/" -o output_notes -m qwen2.5:0.5b
 ```
 
-### Format Output (RAG Trading)
-Sistem akan memotong teks Anda (setiap ~600 kata), memprosesnya lewat Ollama (`llama3`), dan menyimpannya di folder `output_notes/` sebagai **Atomic Notes**. Format ini dioptimalkan agar mudah dibaca oleh manusia dan diolah oleh sistem AI lain.
+### Format Output (RAG-Ready Multi-Domain)
+Sistem akan memotong teks Anda (setiap ~600 kata), memprosesnya lewat Ollama (`llama3`/`llama3.2` dengan output streaming), dan menyimpannya di folder `output_notes/` sebagai **Atomic Notes**. Format ini dirancang khusus untuk RAG (Retrieval-Augmented Generation) di berbagai domain (seperti trading, pemrograman, kuliner, dll).
 
-Setiap file akan memiliki nama unik berdasarkan *slug* dan berisi:
-- Metadata sumber & `#tags`
-- `## 🧠 Summary Knowledge (RAG & Analisa)` - Ringkasan inti untuk tanya jawab.
-- `## 💡 Key Concept` - Penjelasan teori utama.
-- `## 🔍 Scanner & Alert Criteria` - Parameter teknikal/fundamental spesifik untuk membuat screener saham atau *trading alert*.
-- `## ✅ Trading Checklist` - SOP dan langkah syarat sebelum *entry/exit*.
-- `## 📓 Jurnal Evaluasi` - Poin penting untuk bahan evaluasi psikologi dan manajemen risiko ke depan.
-- `## 📝 Original Context` - Kutipan asli dari sumber data.
+Setiap file akan memiliki nama unik berdasarkan *slug* deskriptif (3-5 kata kebab-case) dan berisi struktur konten berikut:
+- **Tags**: Disanitasi menjadi kebab-case lowercase. Tag pertama menunjukkan domain utama (misal: `#trading`, `#programming`), diikuti oleh tag topik spesifik. Dilarang menggunakan tag generik seperti `#ringkasan` atau `#catatan`.
+- `## 🧠 Core Summary`: Paragraf ringkasan padat (3-5 kalimat) yang kaya kata kunci dan bersifat *self-contained* agar optimal saat diambil via semantic search.
+- `## 💡 Key Concepts & Definitions` (Opsional): Daftar konsep, istilah kunci, atau ide dasar beserta definisi singkatnya dalam format bullet points.
+- `## 📌 Important Details / Application` (Opsional): Rincian teknis, langkah-langkah, data kuantitatif, atau penerapan praktis.
+- `## [HEADER DINAMIS]` (Maksimal 1): Header kontekstual sesuai dengan domain konten asli untuk menampung data substantif spesifik, contohnya:
+  - **Trading**: `## 📈 Trading Setup & Criteria` atau `## 📊 Analisa Teknikal`
+  - **Programming**: `## 💻 Code & Implementasi` atau `## 🏗️ Arsitektur Sistem`
+  - **Kuliner**: `## 🥘 Bahan & Takaran` atau `## 👨‍🍳 Langkah Memasak`
+- `## 📝 Original Context & Quotes` (Opsional): Kutipan langsung atau pesan kunci yang wajib dipertahankan kata per kata dari sumber aslinya.
 
 ## 🛠 Menggunakan Makefile (Shorthand)
 Untuk mempermudah penggunaan tanpa harus selalu memanggil `venv` atau mengingat path, Anda bisa menggunakan perintah `make`:
@@ -114,7 +116,7 @@ make clean
 Sistem ini dilengkapi dengan `validate_output.py` untuk menilai apakah hasil ekstraksi sudah memenuhi standar format RAG atau perlu di-reconvert. Terdapat dua metode validasi:
 
 **1. Validasi Cepat (Heuristic/Regex):**
-Mengecek keberadaan judul/heading wajib, jumlah kata, dan tag. Sangat cepat.
+Mengecek keberadaan judul/heading wajib, jumlah kata minimum, dan kesesuaian tag. Sangat cepat.
 ```bash
 # Menggunakan Makefile (default ke output_notes/)
 make validate
@@ -124,7 +126,11 @@ make validate DIR="output_notes_ig/"
 ```
 
 **2. Validasi Mendalam (Ollama LLM):**
-Menggunakan model AI lokal untuk menilai kualitas tulisan dan relevansinya secara semantik.
+Menggunakan model AI lokal untuk menilai kualitas tulisan secara mendalam dengan pembagian skor total 100 poin:
+- **Struktur (30 poin)**: Pemeriksaan bagian inti dan penghilangan bagian kosong (bukan diisi "N/A").
+- **Kualitas RAG (30 poin)**: Kepadatan kata kunci di Core Summary dan kemandirian informasi tiap chunk jika di-retrieve secara terpisah (*self-contained*).
+- **Akurasi (20 poin)**: Konsistensi faktual (menghindari halusinasi) serta keunikan slug/tag.
+- **Format (20 poin)**: Kerapian penyajian, penggunaan bullet points untuk daftar, dan narasi untuk penjelasan konseptual.
 ```bash
 # Menggunakan Makefile (default ke output_notes/)
 make validate-llm
