@@ -32,9 +32,11 @@ def sync_path(old_path, new_path, directory):
                 
                 # Update isi Metadata Source Path
                 # Support modern YAML frontmatter format: source_path: "..."
+                old_escaped = old_path.replace('\\', '\\\\').replace('"', '\\"')
+                new_escaped = new_path.replace('\\', '\\\\').replace('"', '\\"')
                 new_content = content.replace(
-                    f'source_path: "{old_path}"',
-                    f'source_path: "{new_path}"'
+                    f'source_path: "{old_escaped}"',
+                    f'source_path: "{new_escaped}"'
                 )
                 # Also support legacy bold-format metadata (backward compat)
                 new_content = new_content.replace(

@@ -171,6 +171,32 @@ C
                 content = f.read()
             self.assertIn(new_source, content)
 
+    def test_sync_path_with_escaped_windows_path(self):
+        """Verify that paths containing backslashes are correctly matched and replaced in YAML metadata."""
+        old_source = "C:\\Users\\old-doc.pdf"
+        new_source = "C:\\Users\\new-doc.pdf"
+        old_prefix = get_base_title(old_source)
+        
+        md_content = f"""---
+source_type: "PDF Document"
+source_path: "C:\\\\Users\\\\old-doc.pdf"
+tags: []
+converted_at: "2026-01-01 00:00:00"
+---
+# Test
+Content.
+"""
+        self._create_file(f"{old_prefix}-part-1.md", md_content)
+        sync_path(old_source, new_source, self.test_dir)
+        
+        new_prefix = get_base_title(new_source)
+        new_file = os.path.join(self.test_dir, f"{new_prefix}-part-1.md")
+        self.assertTrue(os.path.exists(new_file))
+        
+        with open(new_file, 'r') as f:
+            content = f.read()
+        self.assertIn('source_path: "C:\\\\Users\\\\new-doc.pdf"', content)
+
 
 if __name__ == '__main__':
     unittest.main()

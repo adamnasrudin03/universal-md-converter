@@ -19,6 +19,14 @@ except ImportError: # pragma: no cover
 
 from validate_output import validate_file, save_validation_report
 
+def _yaml_unescape(value):
+    if not value:
+        return value
+    value = value.strip()
+    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+        value = value[1:-1]
+    return value.replace('\\"', '"').replace("\\'", "'").replace('\\\\', '\\')
+
 def extract_raw_content(file_path):
     """
     Ekstrak metadata dan teks mentah dari file markdown yang gagal.
@@ -282,14 +290,17 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 # Ekstrak title untuk disisipkan kembali
                 title = os.path.basename(file_path)[:-3] if file_path.endswith('.md') else os.path.basename(file_path)
                 
-                # Parse metadata to extract source_type and source_path
+                # Parse metadata to extract source_type, source_path and source_context
                 source_type = "Unknown"
                 source_path = "Unknown"
-                if metadata.startswith("---"):
-                    m_type = re.search(r'source_type:\s*[\'"]?([^\'"\n]+?)[\'"]?(?=\n|$)', metadata)
-                    if m_type: source_type = m_type.group(1).strip()
-                    m_path = re.search(r'source_path:\s*[\'"]?([^\'"\n]+?)[\'"]?(?=\n|$)', metadata)
-                    if m_path: source_path = m_path.group(1).strip()
+                source_context = None
+                if metadata.strip().startswith("---"):
+                    m_type = re.search(r'^\s*source_type:\s*(.*)', metadata, re.MULTILINE)
+                    if m_type: source_type = _yaml_unescape(m_type.group(1))
+                    m_path = re.search(r'^\s*source_path:\s*(.*)', metadata, re.MULTILINE)
+                    if m_path: source_path = _yaml_unescape(m_path.group(1))
+                    m_context = re.search(r'^\s*source_context:\s*(.*)', metadata, re.MULTILINE)
+                    if m_context: source_context = _yaml_unescape(m_context.group(1))
                 else:
                     m_type = re.search(r'\*\*Source Type:\*\*\s*(.*)', metadata)
                     if m_type: source_type = m_type.group(1).strip()
@@ -301,7 +312,8 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                     content=new_rag_content,
                     source_type=source_type,
                     source_path_or_url=source_path,
-                    tags=new_tags
+                    tags=new_tags,
+                    source_context=source_context
                 )
                 
                 with open(file_path, 'w', encoding='utf-8') as f:
