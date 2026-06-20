@@ -28,6 +28,13 @@ def heuristic_validation(content):
     max_score = 100
     feedback = []
     
+    # Check for YAML frontmatter structure (source_type, source_path, converted_at)
+    has_frontmatter = bool(re.search(r'^---\s*\n.*?^---\s*$', content, re.MULTILINE | re.DOTALL))
+    if has_frontmatter:
+        score += 10
+    else:
+        feedback.append("YAML frontmatter block is missing or malformed.")
+    
     # Check for tags in YAML frontmatter (modern format: tags: ["tag1", "tag2"])
     # The old inline #hashtag format is no longer used; generate_markdown() emits YAML frontmatter.
     if re.search(r'^tags:\s*\[.+\]', content, re.MULTILINE):
@@ -35,22 +42,38 @@ def heuristic_validation(content):
     else:
         feedback.append("Tags are missing (expected YAML frontmatter 'tags: [...]' with at least one tag).")
         
-    # Check for sections
-    section_points = 80 / len(REQUIRED_SECTIONS)
+    # Check for required sections (Core Summary)
+    section_points = 50 / len(REQUIRED_SECTIONS)
     
     for section in REQUIRED_SECTIONS:
         if re.search(section, content):
             score += section_points
         else:
             feedback.append(f"Missing section: {section.replace('## ', '').strip()}")
-            
+    
+    # Bonus for having additional structured sections (Key Concepts, Important Details, etc.)
+    optional_sections = [
+        r"## 💡 Key Concepts",
+        r"## 📌 Important Details",
+        r"## 📝 Original Context",
+    ]
+    optional_found = sum(1 for s in optional_sections if re.search(s, content))
+    if optional_found > 0:
+        score += min(10, optional_found * 5)  # Up to 10 bonus points
+    
     # Check for length
     words = content.split()
     if len(words) < 50:
         score -= 20
         feedback.append("Content is suspiciously short (under 50 words).")
+    elif len(words) >= 50:
+        score += 10  # Bonus for sufficient length (>= 50 words)
+    
+    # Check for footer signature
+    if "*Converted using Universal MD Converter*" in content:
+        score += 10
     else:
-        score += 10 # Bonus for sufficient length (>= 50 words)
+        feedback.append("Missing footer signature ('*Converted using Universal MD Converter*').")
         
     score = min(max_score, max(0, score))
     status = "OK" if score >= MIN_SCORE_THRESHOLD else "NEEDS RECONVERT"
@@ -71,10 +94,10 @@ def llm_validation(content, file_path=None, model_name='llama3'):
                 raw_content = f.read()
                 
     # Pre-compute truncation to avoid nested expression inside f-string
-    truncated_content = safe_truncate(content, 2500)
+    truncated_content = safe_truncate(content, 4000)
     
     if raw_content:
-        truncated_raw = safe_truncate(raw_content, 2500)
+        truncated_raw = safe_truncate(raw_content, 4000)
         prompt = f"""
 Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) dengan membandingkannya dengan teks sumber aslinya (RAW TEXT).

@@ -8,7 +8,7 @@ from utils.text_helpers import safe_truncate
 def extract_global_context(text, model_name='llama3'):
     """Extract a quick 2-3 sentence global context from the first part of the document."""
     try:
-        truncated_text = safe_truncate(text, 2500)
+        truncated_text = safe_truncate(text, 4000)
         prompt = f"""Tugas Anda adalah membaca teks berikut dan memberikan ringkasan 2-3 kalimat mengenai topik utamanya.
 Ringkasan ini akan digunakan sebagai konteks global. JANGAN menggunakan kata pengantar, langsung berikan ringkasan.
 Teks:
@@ -104,7 +104,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
         
         try:
             # Prompt the local LLM
-            prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(chunk, 2500))
+            prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(chunk, 4000))
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             

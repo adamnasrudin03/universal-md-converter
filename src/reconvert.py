@@ -74,7 +74,7 @@ def process_with_ai(raw_text, model_name='llama3'):
     else:
         global_context_block = ""
         
-    prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(raw_text, 2500))
+    prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(raw_text, 4000))
     
     try:
         response = ollama.chat(model=model_name, messages=[
