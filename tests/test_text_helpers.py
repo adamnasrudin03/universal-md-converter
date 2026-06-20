@@ -63,7 +63,7 @@ class TestSafeTruncate(unittest.TestCase):
         """Edge case: max_chars=0 should return empty."""
         self.assertEqual(safe_truncate("hello", 0), "")
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 from src.utils.text_helpers import get_recommended_model
 
 class TestGetRecommendedModel(unittest.TestCase):

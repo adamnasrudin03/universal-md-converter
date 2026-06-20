@@ -15,6 +15,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 
+from src.converters.youtube_converter import convert_youtube
+
 def extract_video_id(url):
     """Extract video_id logic extracted from convert_youtube for testing without network calls."""
     parsed_url = urllib.parse.urlparse(url)
@@ -76,24 +78,32 @@ class TestYoutubeVideoIdExtraction(unittest.TestCase):
         self.assertIsNone(extract_video_id(""))
 
     @patch('src.converters.youtube_converter.YouTubeTranscriptApi')
-    def test_convert_youtube_shorts(self, mock_api):
+    @patch('src.converters.youtube_converter.TextFormatter')
+    def test_convert_youtube_shorts(self, mock_formatter, mock_api):
         mock_list = MagicMock()
         mock_api.return_value.list.return_value = mock_list
         mock_transcript = MagicMock()
-        mock_transcript.fetch.return_value = [{'text': 'shorts text'}]
         mock_list.find_transcript.return_value = mock_transcript
+        
+        mock_formatter_instance = MagicMock()
+        mock_formatter_instance.format_transcript.return_value = "shorts text"
+        mock_formatter.return_value = mock_formatter_instance
         
         result = convert_youtube("https://www.youtube.com/shorts/DEF456")
         self.assertEqual(result, "shorts text")
         mock_api.return_value.list.assert_called_with("DEF456")
 
     @patch('src.converters.youtube_converter.YouTubeTranscriptApi')
-    def test_convert_youtube_youtu_be(self, mock_api):
+    @patch('src.converters.youtube_converter.TextFormatter')
+    def test_convert_youtube_youtu_be(self, mock_formatter, mock_api):
         mock_list = MagicMock()
         mock_api.return_value.list.return_value = mock_list
         mock_transcript = MagicMock()
-        mock_transcript.fetch.return_value = [{'text': 'youtu be text'}]
         mock_list.find_transcript.return_value = mock_transcript
+        
+        mock_formatter_instance = MagicMock()
+        mock_formatter_instance.format_transcript.return_value = "youtu be text"
+        mock_formatter.return_value = mock_formatter_instance
         
         result = convert_youtube("https://youtu.be/XYZ789")
         self.assertEqual(result, "youtu be text")
