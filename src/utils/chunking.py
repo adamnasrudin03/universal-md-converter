@@ -78,10 +78,11 @@ def recursive_markdown_split(text, max_words=600):
 def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
     """
     Split text into chunks recursively, then use Ollama to format each chunk.
+    Yields each atomic note structure as soon as it's ready.
     """
     # Guard: check for empty text
     if not text or not text.strip():
-        return []
+        return
     
     print("\n🌐 Extracting Global Context...", flush=True)
     global_context = extract_global_context(text, model_name)
@@ -93,8 +94,8 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     
     # Recursive chunking
     chunks = recursive_markdown_split(text, max_words)
+    print(f"📦 Ditemukan {len(chunks)} chunk untuk diproses.", flush=True)
     
-    atomic_notes = []
     used_filenames = set()
     
     for idx, chunk in enumerate(chunks):
@@ -199,11 +200,10 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             counter += 1
         
         used_filenames.add(filename)
-        atomic_notes.append({
+        yield {
             "filename": filename,
             "content": formatted_content,
             "raw_chunk": chunk,
             "tags": final_tags
-        })
-        
-    return atomic_notes
+        }
+

@@ -128,11 +128,7 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
     content = clean_raw_text(content)
         
     print("Splitting text into Atomic Notes intelligently...")
-    atomic_notes = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)
-    
-    if not atomic_notes:
-        print("Warning: No atomic notes were generated (text may be empty).")
-        return
+    atomic_notes_generator = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)
     
     # Ensure output directory exists and create a sub-directory for the specific source
     source_outdir = os.path.join(outdir, base_title)
@@ -142,7 +138,9 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
     if global_used_filenames is None:
         global_used_filenames = set()
     
-    for note in atomic_notes:
+    generated_count = 0
+    for note in atomic_notes_generator:
+        generated_count += 1
         filename = note["filename"]
         chunk_content = note["content"]
         raw_chunk_content = note.get("raw_chunk", "")
@@ -177,7 +175,10 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
             
         print(f"Saved atomic note: {filepath}")
         
-    print(f"\nSuccess! Generated {len(atomic_notes)} atomic notes in '{source_outdir}'")
+    if generated_count == 0:
+        print("Warning: No atomic notes were generated (text may be empty).")
+    else:
+        print(f"\nSuccess! Generated {generated_count} atomic notes in '{source_outdir}'")
 
 def main():
     parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")

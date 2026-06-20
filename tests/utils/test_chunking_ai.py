@@ -50,7 +50,7 @@ class TestChunkingAI:
     @patch('src.utils.chunking.extract_global_context')
     @patch('src.utils.chunking.ollama.chat')
     def test_chunk_text_intelligently_empty(self, mock_chat, mock_global):
-        res = chunk_text_intelligently("   ", "test_base")
+        res = list(chunk_text_intelligently("   ", "test_base"))
         assert res == []
         mock_chat.assert_not_called()
 
@@ -67,7 +67,7 @@ class TestChunkingAI:
         })}}]
         mock_chat.return_value = mock_resp
 
-        res = chunk_text_intelligently("This is the raw text to be chunked.", "base", max_words=10)
+        res = list(chunk_text_intelligently("This is the raw text to be chunked.", "base", max_words=10))
         
         assert len(res) == 1
         assert res[0]["filename"] == "base-test-slug.md"
@@ -94,7 +94,7 @@ class TestChunkingAI:
             
         mock_chat.return_value = [MockObj()]
 
-        res = chunk_text_intelligently("Some text", "base")
+        res = list(chunk_text_intelligently("Some text", "base"))
         
         assert len(res) == 1
         assert res[0]["filename"] == "base-slug-only.md"
@@ -106,7 +106,7 @@ class TestChunkingAI:
         mock_global.return_value = ""
         mock_chat.side_effect = Exception("AI Error")
 
-        res = chunk_text_intelligently("Raw text here.", "base")
+        res = list(chunk_text_intelligently("Raw text here.", "base"))
         
         assert len(res) == 1
         assert res[0]["filename"] == "base-part-1.md"
@@ -123,7 +123,7 @@ class TestChunkingAI:
         mock_chat.return_value = mock_resp
         
         # Make it split into 3 chunks
-        res = chunk_text_intelligently("A B C D E F G H I J K L M", "base", max_words=4)
+        res = list(chunk_text_intelligently("A B C D E F G H I J K L M", "base", max_words=4))
         
         assert len(res) == 4
         assert res[0]["filename"] == "base-same-slug.md"
