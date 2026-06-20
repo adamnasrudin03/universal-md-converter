@@ -6,6 +6,7 @@ import sys
 
 from utils.prompts import RAG_EXTRACTION_PROMPT
 from utils.text_helpers import safe_truncate, get_recommended_model
+from utils.markdown_formatter import generate_markdown
 
 
 
@@ -37,7 +38,7 @@ def extract_raw_content(file_path):
         footer = content[matches[-1].start():].strip()
         return metadata, raw_text, footer
     elif len(matches) >= 2:
-        # Legacy format fallback
+        # Legacy format fallback with ---
         first_sep = matches[0]
         last_sep = matches[-1]
         metadata = content[:first_sep.start()].rstrip()
@@ -45,8 +46,21 @@ def extract_raw_content(file_path):
         footer = content[last_sep.end():].strip()
         return metadata, raw_text, footer
     else:
-        # Fallback jika struktur tidak standard
-        return "", content, ""
+        # Fallback jika struktur tidak standard (e.g. no --- at all)
+        m = re.search(r'(\*\*Source Type:\*\*.*?\*\*Converted At:\*\*.*?)\n\n', content, re.DOTALL)
+        if m:
+            metadata = content[:m.end()].strip()
+            raw_text = content[m.end():].strip()
+            if raw_text.endswith("*Converted using Universal MD Converter*"):
+                footer = "*Converted using Universal MD Converter*"
+                raw_text = raw_text[:-len(footer)].strip()
+            else:
+                footer = ""
+        else:
+            metadata = ""
+            raw_text = content
+            footer = ""
+        return metadata, raw_text, footer
 
 def process_with_ai(raw_text, model_name='llama3'):
     """
@@ -138,6 +152,10 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 if res['status'] == "NEEDS RECONVERT":
                     print(f"❌ BUTUH RECONVERT ({res['score']}/100)")
                     files_to_reconvert.append((file_path, res))
+                elif res['status'] == "ERROR":
+                    print(f"⚠️ ERROR VALIDASI ({res['score']}/100)")
+                    # We can consider it as needing reconvert if it's completely broken
+                    files_to_reconvert.append((file_path, res))
                 else:
                     print(f"✅ OK ({res['score']}/100)")
                     
@@ -174,16 +192,31 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             new_rag_content, new_tags = process_with_ai(raw_text, model_name)
             
             if new_rag_content:
-                # 3. Update tags di YAML metadata (jika format YAML)
-                if metadata.startswith("---") and "tags:" in metadata:
-                    tags_yaml = json.dumps(new_tags)
-                    metadata = re.sub(r'^tags:.*$', f'tags: {tags_yaml}', metadata, flags=re.MULTILINE)
-                    
                 # Ekstrak title untuk disisipkan kembali
                 title = os.path.basename(file_path).replace('.md', '')
-                    
-                # 4. Tulis ulang file
-                new_file_content = f"{metadata}\n\n# {title}\n\n{new_rag_content}\n\n{footer}"
+                
+                # Parse metadata to extract source_type and source_path
+                source_type = "Unknown"
+                source_path = "Unknown"
+                if metadata.startswith("---"):
+                    m_type = re.search(r'source_type:\s*"?(.*?)"?\n', metadata)
+                    if m_type: source_type = m_type.group(1)
+                    m_path = re.search(r'source_path:\s*"?(.*?)"?\n', metadata)
+                    if m_path: source_path = m_path.group(1)
+                else:
+                    m_type = re.search(r'\*\*Source Type:\*\*\s*(.*)', metadata)
+                    if m_type: source_type = m_type.group(1).strip()
+                    m_path = re.search(r'\*\*Source Path/URL:\*\*\s*`?(.*?)`?\s*\n', metadata + '\n')
+                    if m_path: source_path = m_path.group(1).strip()
+
+                new_file_content = generate_markdown(
+                    title=title,
+                    content=new_rag_content,
+                    source_type=source_type,
+                    source_path_or_url=source_path,
+                    tags=new_tags
+                )
+                
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(new_file_content)
                 print("  ✅ Berhasil ditulis. Memvalidasi ulang secara otomatis...")
