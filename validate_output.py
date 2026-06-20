@@ -64,11 +64,13 @@ def llm_validation(content, model_name='llama3'):
     
     prompt = f"""
 Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
-Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut. 
+Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut.
 Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
-1. Struktur: Apakah memiliki 4 bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah ada header dinamis tambahan yang sesuai konteks?
-2. Kualitas Konten: Apakah isinya informatif, akurat, dan komprehensif sesuai topik aslinya?
-3. Format: Apakah formatnya rapi dan mudah dibaca oleh manusia maupun AI (RAG-ready)?
+
+1. Struktur (30 poin): Apakah memiliki bagian-bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah bagian yang kosong sudah dihilangkan (bukan diisi "N/A")?
+2. Kualitas RAG (30 poin): Apakah Core Summary self-contained dan kaya kata kunci untuk semantic search? Apakah setiap bagian bermakna jika di-retrieve secara parsial?
+3. Akurasi (20 poin): Apakah isinya terlihat faktual dan konsisten (tidak ada hallucination yang jelas)? Apakah tag dan slug deskriptif dan spesifik (bukan generik)?
+4. Format (20 poin): Apakah formatnya rapi, menggunakan bullet points untuk daftar dan narasi untuk penjelasan? Apakah mudah dibaca oleh manusia maupun AI?
 
 Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
 {{
