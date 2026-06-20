@@ -17,7 +17,10 @@ REQUIRED_SECTIONS = [
     r"## 🧠 Core Summary"
 ]
 
-MIN_SCORE_THRESHOLD = int(os.environ.get("MIN_SCORE", 85))
+try:
+    MIN_SCORE_THRESHOLD = int(os.environ.get("MIN_SCORE", 85))
+except (ValueError, TypeError):
+    MIN_SCORE_THRESHOLD = 85
 
 def heuristic_validation(content):
     """Validasi menggunakan aturan regex dasar dan panjang teks."""

@@ -66,6 +66,13 @@ def convert_ig_link(url):
             slide_number += 1
             ocr_text = convert_image(filepath)
             
+            # Skip slides where OCR returned an error or empty result
+            if ocr_text.startswith("Error extracting Image text:") or not ocr_text.strip():
+                content.append(f"### Slide {slide_number}\n")
+                content.append("*OCR could not extract text from this slide.*")
+                content.append("\n\n")
+                continue
+            
             content.append(f"### Slide {slide_number}\n")
             content.append(ocr_text)
             content.append("\n\n")

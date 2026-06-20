@@ -214,9 +214,14 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 source_type = "Unknown"
                 source_path = "Unknown"
                 if metadata.startswith("---"):
-                    m_type = re.search(r'source_type:\s*"?(.*?)"?\n', metadata)
+                    # Match quoted YAML values: source_type: "value" or source_type: value
+                    m_type = re.search(r'source_type:\s*"([^"]*)"', metadata)
+                    if not m_type:
+                        m_type = re.search(r'source_type:\s*(\S+)', metadata)
                     if m_type: source_type = m_type.group(1)
-                    m_path = re.search(r'source_path:\s*"?(.*?)"?\n', metadata)
+                    m_path = re.search(r'source_path:\s*"([^"]*)"', metadata)
+                    if not m_path:
+                        m_path = re.search(r'source_path:\s*(\S+)', metadata)
                     if m_path: source_path = m_path.group(1)
                 else:
                     m_type = re.search(r'\*\*Source Type:\*\*\s*(.*)', metadata)
