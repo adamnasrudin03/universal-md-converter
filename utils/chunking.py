@@ -14,24 +14,37 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     if not text or not text.strip():
         return []
     
-    lines = text.splitlines(keepends=True)
+    # Semantic paragraph chunking with overlap
+    paragraphs = re.split(r'\n\s*\n', text)
     chunks = []
     current_chunk = ""
     current_words = 0
+    last_paragraph = ""
     
-    # Split by lines to preserve original markdown formatting and newlines
-    for line in lines:
-        word_count = len(line.split())
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+            
+        word_count = len(para.split())
+        
         if current_words + word_count > max_words and current_words > 0:
-            chunks.append(current_chunk)
-            current_chunk = line
-            current_words = word_count
+            chunks.append(current_chunk.strip())
+            # Mulai chunk baru dengan overlap (menyertakan paragraf terakhir dari chunk sebelumnya)
+            if last_paragraph and len(last_paragraph.split()) < (max_words / 2):
+                current_chunk = last_paragraph + "\n\n" + para + "\n\n"
+                current_words = len(last_paragraph.split()) + word_count
+            else:
+                current_chunk = para + "\n\n"
+                current_words = word_count
         else:
-            current_chunk += line
+            current_chunk += para + "\n\n"
             current_words += word_count
             
-    if current_chunk:
-        chunks.append(current_chunk)
+        last_paragraph = para
+            
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
         
     atomic_notes = []
     used_filenames = set()
@@ -49,7 +62,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             
             response = ollama.chat(model=model_name, messages=[
                 {'role': 'user', 'content': prompt}
-            ], format='json', stream=True)
+            ], format='json', stream=True, options={'temperature': 0.0})
             
             response_text = ""
             for stream_chunk in response:

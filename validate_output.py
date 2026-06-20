@@ -122,7 +122,7 @@ Dokumen untuk dievaluasi:
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format='json')
+        ], format='json', options={'temperature': 0.0})
         
         # Handle both dict and object-style responses from ollama-python
         if isinstance(response, dict):

@@ -5,7 +5,7 @@ def convert_pdf(file_path):
     try:
         with pdfplumber.open(file_path) as pdf:
             for i, page in enumerate(pdf.pages):
-                page_text = page.extract_text()
+                page_text = page.extract_text(layout=True)
                 if page_text:
                     text_content.append(f"## Page {i + 1}\n\n{page_text}")
         return "\n\n".join(text_content) if text_content else ""

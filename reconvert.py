@@ -72,7 +72,7 @@ def process_with_ai(raw_text, model_name='llama3'):
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format='json', stream=True)
+        ], format='json', stream=True, options={'temperature': 0.0})
         
         response_text = ""
         for stream_chunk in response:
