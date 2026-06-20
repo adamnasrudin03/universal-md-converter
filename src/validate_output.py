@@ -199,14 +199,35 @@ def validate_file(file_path, use_llm=False, model_name='llama3'):
         else:
             score, status, feedback = heuristic_validation(content)
             
+        try:
+            mtime = os.path.getmtime(file_path)
+        except Exception:
+            mtime = 0
+            
         return {
             "file": os.path.basename(file_path),
             "score": score,
             "status": status,
-            "feedback": feedback
+            "feedback": feedback,
+            "mtime": mtime
         }
     except Exception as e:
-        return {"file": os.path.basename(file_path), "score": 0, "status": "ERROR", "feedback": [str(e)]}
+        return {"file": os.path.basename(file_path), "score": 0, "status": "ERROR", "feedback": [str(e)], "mtime": 0}
+
+def save_validation_report(file_path, res):
+    """Membantu menyimpan atau mengupdate validation_report.json di direktori yang bersangkutan."""
+    try:
+        report_file = os.path.join(os.path.dirname(file_path), "validation_report.json")
+        dir_results = {}
+        if os.path.exists(report_file):
+            with open(report_file, 'r', encoding='utf-8') as f:
+                dir_results = json.load(f)
+        dir_results[os.path.basename(file_path)] = res
+        with open(report_file, "w", encoding="utf-8") as f:
+            json.dump(dir_results, f, indent=2, ensure_ascii=False)
+    except Exception as e: # pragma: no cover
+        print(f"⚠️ Gagal menyimpan cache validasi untuk {file_path}: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validasi output Markdown hasil generate.")
@@ -246,17 +267,7 @@ if __name__ == "__main__":
         res = validate_file(target_path, args.llm, model)
         print_result(res)
         # Simpan ke validation_report.json di direktori file tersebut
-        try:
-            report_file = os.path.join(os.path.dirname(target_path), "validation_report.json")
-            dir_results = {}
-            if os.path.exists(report_file):
-                with open(report_file, 'r', encoding='utf-8') as f:
-                    dir_results = json.load(f)
-            dir_results[os.path.basename(target_path)] = res
-            with open(report_file, "w", encoding="utf-8") as f:
-                json.dump(dir_results, f, indent=2, ensure_ascii=False)
-        except Exception: # pragma: no cover
-            pass
+        save_validation_report(target_path, res)
     elif os.path.isdir(target_path):
         for root, dirs, files in os.walk(target_path):
             dir_results = {}

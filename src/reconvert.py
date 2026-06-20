@@ -17,7 +17,7 @@ except ImportError: # pragma: no cover
     print("Error: Package 'ollama' belum ter-install. Silakan jalankan 'pip install ollama'.")
     sys.exit(1)
 
-from validate_output import validate_file
+from validate_output import validate_file, save_validation_report
 
 def extract_raw_content(file_path):
     """
@@ -181,8 +181,8 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 if file in dir_cache:
                     try:
                         md_mtime = os.path.getmtime(file_path)
-                        cache_mtime = os.path.getmtime(report_file)
-                        if cache_mtime >= md_mtime:
+                        cache_entry_mtime = dir_cache[file].get("mtime", 0)
+                        if cache_entry_mtime >= md_mtime:
                             res = dir_cache[file]
                             print("[CACHE] ", end="")
                     except Exception: # pragma: no cover
@@ -191,6 +191,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 # Validasi file jika tidak ada di cache atau cache usang
                 if not res:
                     res = validate_file(file_path, use_llm_validation, model_name)
+                    save_validation_report(file_path, res)
                 
                 if res['status'] == "NEEDS RECONVERT":
                     print(f"❌ BUTUH RECONVERT ({res['score']}/100)")
@@ -279,6 +280,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 
                 # 4. Validasi Ulang
                 validation_res = validate_file(file_path, use_llm_validation, model_name)
+                save_validation_report(file_path, validation_res)
                 if validation_res['status'] == "OK":
                     print(f"  🎉 Validasi sukses! Score: {validation_res['score']}/100")
                 else:
