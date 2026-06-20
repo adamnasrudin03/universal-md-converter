@@ -8,7 +8,7 @@ Covers audit findings:
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from reconvert import extract_raw_content
 import unittest

@@ -12,7 +12,7 @@ Covers audit findings:
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from validate_output import heuristic_validation, MIN_SCORE_THRESHOLD
 import unittest

@@ -14,7 +14,7 @@ Also covers additional heuristic validation edge cases found in Audit Cycle 2:
 import sys
 import os
 import importlib
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 import unittest
 from unittest import mock

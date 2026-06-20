@@ -12,7 +12,7 @@ Covers audit findings (Cycle 1 & 2 — converters not previously tested):
 import sys
 import os
 import tempfile
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock

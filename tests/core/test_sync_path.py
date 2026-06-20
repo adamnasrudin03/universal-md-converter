@@ -12,7 +12,7 @@ import sys
 import os
 import tempfile
 import shutil
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from sync_path import sync_path, get_base_title
 import unittest
