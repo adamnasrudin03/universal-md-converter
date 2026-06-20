@@ -50,7 +50,7 @@ def heuristic_validation(content):
         score += 10 # Bonus for sufficient length (>= 50 words)
         
     score = min(max_score, max(0, score))
-    status = "OK" if score >= 80 else "NEEDS RECONVERT"
+    status = "OK" if score >= 85 else "NEEDS RECONVERT"
     
     return round(score, 2), status, feedback
 
@@ -79,7 +79,7 @@ Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
   "feedback": ["alasan 1", "alasan 2"]
 }}
 
-Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= 80, atau "NEEDS RECONVERT" jika score < 80.
+Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= 85, atau "NEEDS RECONVERT" jika score < 85.
 
 Dokumen untuk dievaluasi:
 {truncated_content}
@@ -117,7 +117,7 @@ Dokumen untuk dievaluasi:
         score = min(100, max(0, score))
         status = parsed_json.get("status", "NEEDS RECONVERT")
         if status not in ("OK", "NEEDS RECONVERT", "ERROR"):
-            status = "OK" if score >= 80 else "NEEDS RECONVERT"
+            status = "OK" if score >= 85 else "NEEDS RECONVERT"
         feedback = parsed_json.get("feedback", []) or []
         if not isinstance(feedback, list):
             feedback = [str(feedback)]
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         print(f"📄 File: {res['file']}")
         print(f"   Score: {res['score']}/100")
         print(f"   Status: {status_color}{res['status']}{reset_color}")
-        if res['feedback'] and res['status'] != "OK":
+        if res['feedback']:
             print("   Feedback:")
             for fb in res['feedback']:
                 print(f"     - {fb}")

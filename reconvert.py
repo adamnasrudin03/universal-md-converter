@@ -149,10 +149,14 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 res = validate_file(file_path, use_llm_validation, model_name)
                 
                 if res['status'] == "NEEDS RECONVERT":
-                    print("❌ BUTUH RECONVERT")
+                    print(f"❌ BUTUH RECONVERT ({res['score']}/100)")
                     files_to_reconvert.append((file_path, res))
                 else:
                     print(f"✅ OK ({res['score']}/100)")
+                    
+                if res.get('feedback'):
+                    feedback_text = ' | '.join(res['feedback'])
+                    print(f"    Alasan: {feedback_text}")
                     
     if not files_to_reconvert:
         print("✅ Tidak ada file yang butuh di-reconvert. Semuanya OK!")
@@ -193,9 +197,15 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 validation_res = validate_file(file_path, use_llm_validation, model_name)
                 if validation_res['status'] == "OK":
                     print(f"  🎉 Validasi sukses! Score: {validation_res['score']}/100")
-                    break
                 else:
                     print(f"  ❌ Validasi ulang masih gagal. Score: {validation_res['score']}/100")
+                    
+                if validation_res.get('feedback'):
+                    print(f"    Alasan: {' | '.join(validation_res['feedback'])}")
+                    
+                if validation_res['status'] == "OK":
+                    break
+                else:
                     if attempt == max_retries - 1:
                         print("  ⚠️ Gagal mencapai status OK setelah batas maksimal retry.")
             else:
