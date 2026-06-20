@@ -129,9 +129,20 @@ make run INPUT="/path/ke/buku.pdf" MODEL="qwen2.5:0.5b"
 # Jika Anda me-rename atau memindahkan file sumber, sinkronkan output Markdown-nya
 make sync-path OLD="path/ke/file_lama.pdf" NEW="path/ke/file_baru.pdf"
 
+# Menjalankan seluruh unit test
+make test
+
 # Hapus semua output sebelumnya
 make clean
 ```
+
+## 🕵️‍♂️ Pengujian (Unit Testing)
+Proyek ini menggunakan `pytest` untuk *unit testing* dan menguji kestabilan setiap modul *converter*. Anda dapat menjalankan seluruh *test suite* secara mudah melalui *Makefile*:
+
+```bash
+make test
+```
+*Catatan: Proses testing dapat menghasilkan file laporan seperti `.coverage`.*
 
 ## 🧪 Validasi Output (Quality Control)
 Sistem ini dilengkapi dengan `validate_output.py` untuk menilai apakah hasil ekstraksi sudah memenuhi standar format RAG atau perlu di-reconvert. Terdapat dua metode validasi:

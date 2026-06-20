@@ -12,6 +12,9 @@ This project is an automated file and web-link converter designed to extract tex
 4. **Batch Processing**: `src/main.py` supports converting whole directories. When passing a directory, it recursively traverses and converts all supported file types within it.
 5. **Dependencies**: Prefer free and open-source libraries (e.g., `whisper` base model, `pytesseract`, `pdfplumber`, `youtube-transcript-api`).
 6. **No Cat Command**: Agents editing this project must use native file writing tools, never `cat` via `run_command` to write files.
+7. **AI Vibe Coding**: Always maintain a faithful AI coding vibe.
+8. **Testing Requirement**: You must run `make test` to verify changes. Every new feature or enhancement MUST be accompanied by corresponding unit tests.
+9. **Function Splitting**: If a function becomes too long, refactor and split it into separate files based on context.
 
 ## Python Environment
 When testing or running the script, ensure you activate the virtual environment `source venv/bin/activate` before executing `python src/main.py`.

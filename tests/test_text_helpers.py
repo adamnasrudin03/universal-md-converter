@@ -25,8 +25,8 @@ class TestSafeTruncate(unittest.TestCase):
 
     def test_truncates_at_word_boundary(self):
         text = "Hello world this is a test of truncation"
-        result = safe_truncate(text, 20)
         # Should break at a space, not mid-word
+        result = safe_truncate(text, 20)
         self.assertFalse(result.endswith("thi"))
         self.assertTrue(len(result) <= 20)
 
@@ -63,6 +63,25 @@ class TestSafeTruncate(unittest.TestCase):
         """Edge case: max_chars=0 should return empty."""
         self.assertEqual(safe_truncate("hello", 0), "")
 
+from unittest.mock import patch
+from src.utils.text_helpers import get_recommended_model
+
+class TestGetRecommendedModel(unittest.TestCase):
+    @patch('src.utils.text_helpers.psutil')
+    def test_get_recommended_model_large_ram(self, mock_psutil):
+        mock_psutil.virtual_memory.return_value.total = 32 * (1024**3)
+        self.assertEqual(get_recommended_model(), "llama3.2")
+
+    @patch('src.utils.text_helpers.psutil')
+    def test_get_recommended_model_small_ram(self, mock_psutil):
+        mock_psutil.virtual_memory.return_value.total = 8 * (1024**3)
+        self.assertEqual(get_recommended_model(), "llama3.2:1b")
+
+    @patch('src.utils.text_helpers.psutil')
+    def test_get_recommended_model_exception(self, mock_psutil):
+        mock_psutil.virtual_memory.side_effect = Exception("No RAM info")
+        self.assertEqual(get_recommended_model(), "llama3")
 
 if __name__ == '__main__':
     unittest.main()
+

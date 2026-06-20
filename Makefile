@@ -60,5 +60,4 @@ clean:
 
 test:
 	@echo "=> Menjalankan seluruh unit test..."
-	./venv/bin/python -m pytest tests/ -v
-
+	PYTHONPATH=src ./venv/bin/python -m pytest tests/ -v
