@@ -17,7 +17,7 @@ temp_ig_*/
 *.temp.wav
 
 # Test Coverage
-.coverage
+.coverage*
 coverage.*
 
 # OS generated files

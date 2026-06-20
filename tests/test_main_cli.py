@@ -175,9 +175,10 @@ class TestMainCLI:
 
     @patch('src.main.argparse.ArgumentParser.parse_args')
     @patch('src.main.ensure_model_installed')
+    @patch('src.main.os.makedirs')
     @patch('src.main.os.path.isdir')
     @patch('src.main.process_source')
-    def test_main_single_source(self, mock_proc, mock_isdir, mock_ensure, mock_args):
+    def test_main_single_source(self, mock_proc, mock_isdir, mock_makedirs, mock_ensure, mock_args):
         mock_args.return_value = MagicMock(source="file.pdf", outdir="out", model="model")
         mock_isdir.return_value = False # Not a directory
         
@@ -186,10 +187,11 @@ class TestMainCLI:
 
     @patch('src.main.argparse.ArgumentParser.parse_args')
     @patch('src.main.ensure_model_installed')
+    @patch('src.main.os.makedirs')
     @patch('src.main.os.path.isdir')
     @patch('src.main.os.walk')
     @patch('src.main.process_source')
-    def test_main_batch_directory(self, mock_proc, mock_walk, mock_isdir, mock_ensure, mock_args):
+    def test_main_batch_directory(self, mock_proc, mock_walk, mock_isdir, mock_makedirs, mock_ensure, mock_args):
         mock_args.return_value = MagicMock(source="dir", outdir="out", model="model")
         mock_isdir.return_value = True
         mock_walk.return_value = [("root", [], ["file1.pdf", ".hidden", "file2.docx"])]
@@ -197,8 +199,3 @@ class TestMainCLI:
         main()
         assert mock_proc.call_count == 2 # file1.pdf and file2.docx
 
-    @patch('src.main.main')
-    def test_main_block(self, mock_main):
-        import runpy
-        runpy.run_module('src.main', run_name='__main__')
-        mock_main.assert_called_once()

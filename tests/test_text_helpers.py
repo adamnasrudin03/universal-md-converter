@@ -63,24 +63,43 @@ class TestSafeTruncate(unittest.TestCase):
         """Edge case: max_chars=0 should return empty."""
         self.assertEqual(safe_truncate("hello", 0), "")
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from src.utils.text_helpers import get_recommended_model
 
 class TestGetRecommendedModel(unittest.TestCase):
-    @patch('src.utils.text_helpers.psutil')
-    def test_get_recommended_model_large_ram(self, mock_psutil):
-        mock_psutil.virtual_memory.return_value.total = 32 * (1024**3)
+    @patch('src.utils.text_helpers.platform.system')
+    @patch('src.utils.text_helpers.subprocess.run')
+    def test_get_recommended_model_mac_large_ram(self, mock_run, mock_system):
+        mock_system.return_value = "Darwin"
+        mock_run.return_value = MagicMock(returncode=0, stdout="34359738368\n") # 32GB
+        self.assertEqual(get_recommended_model(), "llama3")
+
+    @patch('src.utils.text_helpers.platform.system')
+    @patch('src.utils.text_helpers.subprocess.run')
+    def test_get_recommended_model_mac_small_ram(self, mock_run, mock_system):
+        mock_system.return_value = "Darwin"
+        mock_run.return_value = MagicMock(returncode=0, stdout="8589934592\n") # 8GB
         self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.psutil')
-    def test_get_recommended_model_small_ram(self, mock_psutil):
-        mock_psutil.virtual_memory.return_value.total = 8 * (1024**3)
-        self.assertEqual(get_recommended_model(), "llama3.2:1b")
+    @patch('src.utils.text_helpers.platform.system')
+    @patch('src.utils.text_helpers.subprocess.run')
+    def test_get_recommended_model_mac_subprocess_error(self, mock_run, mock_system):
+        mock_system.return_value = "Darwin"
+        mock_run.return_value = MagicMock(returncode=1, stdout="")
+        self.assertEqual(get_recommended_model(), "llama3.2")
 
-    @patch('src.utils.text_helpers.psutil')
-    def test_get_recommended_model_exception(self, mock_psutil):
-        mock_psutil.virtual_memory.side_effect = Exception("No RAM info")
-        self.assertEqual(get_recommended_model(), "llama3")
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_exception(self, mock_system):
+        mock_system.side_effect = Exception("General error")
+        self.assertEqual(get_recommended_model(), "llama3.2")
+
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_linux_large(self, mock_system):
+        mock_system.return_value = "Linux"
+        mock_open = MagicMock()
+        mock_open.return_value.__enter__.return_value = ["MemTotal:       33554432 kB\n"] # 32GB
+        with patch('builtins.open', mock_open):
+            self.assertEqual(get_recommended_model(), "llama3")
 
 if __name__ == '__main__':
     unittest.main()

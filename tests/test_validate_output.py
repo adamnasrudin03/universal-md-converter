@@ -126,6 +126,29 @@ Short.
         score_with, _, _ = heuristic_validation(md_with)
         self.assertGreaterEqual(score_with, score_without)
 
+    @patch('src.validate_output.OLLAMA_AVAILABLE', False)
+    def test_llm_validation_no_ollama(self):
+        from src.validate_output import llm_validation
+        score, status, feedback = llm_validation("content")
+        self.assertEqual(status, "ERROR")
+        self.assertEqual(score, 0)
+        
+    @patch('src.validate_output.ollama')
+    def test_llm_validation_fallback_json_regex_fail(self, mock_ollama):
+        from src.validate_output import llm_validation
+        # Invalid JSON that matches regex but is still invalid JSON
+        mock_ollama.chat.return_value = MagicMock(message=MagicMock(content='{ "score": unquoted_string }'))
+        score, status, feedback = llm_validation("content")
+        self.assertEqual(status, "ERROR")
+        self.assertIn("still not valid JSON", feedback[0])
+        
+    @patch('src.validate_output.ollama')
+    def test_llm_validation_score_not_numeric(self, mock_ollama):
+        from src.validate_output import llm_validation
+        # Score is returned as something that float() can't parse
+        mock_ollama.chat.return_value = MagicMock(message=MagicMock(content='{"score": "eighty", "status": "NEEDS RECONVERT", "feedback": []}'))
+        score, status, feedback = llm_validation("content")
+        self.assertEqual(score, 0)
 
 if __name__ == '__main__':
     unittest.main()

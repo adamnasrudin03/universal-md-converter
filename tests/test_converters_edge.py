@@ -97,6 +97,80 @@ class TestMediaConverter:
         res = convert_media("dummy.mp4")
         assert "Error transcribing media" in res
 
+    @patch('src.converters.media_converter.extract_audio_from_video')
+    @patch('src.converters.media_converter.whisper.load_model')
+    @patch('src.converters.media_converter.os.path.exists')
+    @patch('src.converters.media_converter.os.remove')
+    def test_convert_media_video_success(self, mock_remove, mock_exists, mock_load, mock_extract):
+        mock_extract.return_value = True
+        mock_exists.return_value = True
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = {"text": "Video Text"}
+        mock_load.return_value = mock_model
+        
+        res = convert_media("test.mp4", is_video=True)
+        assert res == "Video Text"
+        mock_remove.assert_called_once_with("test.mp4.temp.wav")
+        
+    @patch('src.converters.media_converter.extract_audio_from_video')
+    @patch('src.converters.media_converter.whisper.load_model')
+    @patch('src.converters.media_converter.os.path.exists')
+    @patch('src.converters.media_converter.os.remove')
+    def test_convert_media_video_remove_fail(self, mock_remove, mock_exists, mock_load, mock_extract):
+        mock_extract.return_value = True
+        mock_exists.return_value = True
+        mock_remove.side_effect = Exception("Failed to remove")
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = {"text": "Video Text"}
+        mock_load.return_value = mock_model
+        
+        res = convert_media("test.mp4", is_video=True)
+        assert res == "Video Text" # Exception should be ignored
+
+    @patch('src.converters.media_converter.extract_audio_from_video')
+    def test_convert_media_video_extract_fail(self, mock_extract):
+        mock_extract.return_value = False
+        res = convert_media("test.mp4", is_video=True)
+        assert res == "Failed to extract audio from video."
+
+    @patch('src.converters.media_converter.VideoFileClip')
+    def test_extract_audio_from_video_success(self, mock_video_class):
+        mock_video = MagicMock()
+        mock_video.audio = MagicMock()
+        mock_video_class.return_value = mock_video
+        
+        from src.converters.media_converter import extract_audio_from_video
+        res = extract_audio_from_video("test.mp4", "out.wav")
+        assert res is True
+        mock_video.audio.write_audiofile.assert_called_once_with("out.wav", verbose=False, logger=None)
+        mock_video.close.assert_called_once()
+
+    @patch('src.converters.media_converter.VideoFileClip')
+    def test_extract_audio_from_video_no_audio(self, mock_video_class):
+        mock_video = MagicMock()
+        mock_video.audio = None
+        mock_video_class.return_value = mock_video
+        
+        from src.converters.media_converter import extract_audio_from_video
+        res = extract_audio_from_video("test.mp4", "out.wav")
+        assert res is False
+
+    @patch('src.converters.media_converter.VideoFileClip')
+    def test_extract_audio_from_video_exception(self, mock_video_class):
+        mock_video_class.side_effect = Exception("Video error")
+        from src.converters.media_converter import extract_audio_from_video
+        res = extract_audio_from_video("test.mp4", "out.wav")
+        assert res is False
+
+    @patch('src.converters.media_converter.VideoFileClip')
+    def test_extract_audio_from_video_close_exception(self, mock_video_class):
+        mock_video = MagicMock()
+        mock_video.close.side_effect = Exception("Close error")
+        mock_video_class.return_value = mock_video
+        from src.converters.media_converter import extract_audio_from_video
+        res = extract_audio_from_video("test.mp4", "out.wav")
+        assert res is True # Exception ignoreds
+
 # --- pdf_converter.py ---
 from src.converters.pdf_converter import convert_pdf
 
