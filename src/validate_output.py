@@ -151,7 +151,7 @@ Dokumen untuk dievaluasi:
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format='json', options={'temperature': 0.0})
+        ], format='json', options={'temperature': 0.0, 'num_ctx': 4096})
         
         # Handle both dict and object-style responses from ollama-python
         if isinstance(response, dict):
@@ -280,6 +280,8 @@ if __name__ == "__main__":
                     res = validate_file(file_path, args.llm, model)
                     print_result(res)
                     dir_results[file] = res
+                    import gc
+                    gc.collect()
             
             if dir_results:
                 report_file = os.path.join(root, "validation_report.json")

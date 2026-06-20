@@ -112,7 +112,7 @@ def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
             messages=[{'role': 'user', 'content': prompt}],
             format=schema,
             stream=False,
-            options={'temperature': temperature}
+            options={'temperature': temperature, 'num_ctx': 4096}
         )
         
         response_text = ""
