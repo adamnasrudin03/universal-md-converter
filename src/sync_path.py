@@ -49,9 +49,23 @@ def sync_path(old_path, new_path, directory):
                 # Tulis file baru dan hapus yang lama (rename)
                 with open(old_filepath, 'w', encoding='utf-8') as f:
                     f.write(new_content)
-                    
-                os.rename(old_filepath, new_filepath)
-                print(f"✅ Diperbarui: {file} -> {new_filename}")
+                
+                # Guard: don't overwrite an existing file at the destination
+                if os.path.exists(new_filepath) and old_filepath != new_filepath:
+                    print(f"⚠️ Skip rename {file}: target '{new_filename}' already exists.")
+                else:
+                    os.rename(old_filepath, new_filepath)
+                    print(f"✅ Diperbarui: {file} -> {new_filename}")
+                
+                # Also rename companion .raw.txt file if it exists
+                old_raw = f"{old_filepath}.raw.txt"
+                new_raw = f"{new_filepath}.raw.txt"
+                if os.path.exists(old_raw):
+                    if os.path.exists(new_raw) and old_raw != new_raw:
+                        print(f"⚠️ Skip rename raw: target '{os.path.basename(new_raw)}' already exists.")
+                    else:
+                        os.rename(old_raw, new_raw)
+                        
                 count += 1
                 
     if count == 0:
@@ -67,8 +81,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    if not os.path.exists(args.dir):
-        print(f"Error: Direktori {args.dir} tidak ditemukan.")
+    if not os.path.isdir(args.dir):
+        print(f"Error: '{args.dir}' bukan direktori yang valid atau tidak ditemukan.")
         exit(1)
         
     sync_path(args.old, args.new, args.dir)

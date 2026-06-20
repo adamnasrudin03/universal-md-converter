@@ -131,6 +131,9 @@ def process_source(source, outdir, model_name):
         print("Warning: No atomic notes were generated (text may be empty).")
         return
     
+    # Ensure output directory exists (safe for programmatic callers)
+    os.makedirs(outdir, exist_ok=True)
+    
     for note in atomic_notes:
         filename = note["filename"]
         chunk_content = note["content"]
