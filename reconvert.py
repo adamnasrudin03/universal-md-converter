@@ -173,8 +173,16 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
         print(f"\n[{idx+1}/{len(files_to_reconvert)}] Memproses ulang: {os.path.basename(file_path)}")
         
         # 1. Ekstrak teks asli HANYA pada percobaan pertama
-        metadata, raw_text, footer = extract_raw_content(file_path)
+        metadata, raw_text_from_md, footer = extract_raw_content(file_path)
         
+        # Gunakan raw.txt jika tersedia (untuk menghindari halusinasi berantai)
+        raw_filepath = f"{file_path}.raw.txt"
+        if os.path.exists(raw_filepath):
+            with open(raw_filepath, 'r', encoding='utf-8') as f:
+                raw_text = f.read()
+        else:
+            raw_text = raw_text_from_md
+            
         for attempt in range(max_retries):
             if attempt > 0:
                 print(f"  🔄 Retrying... (Attempt {attempt+1}/{max_retries})")

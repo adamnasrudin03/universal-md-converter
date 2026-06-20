@@ -134,6 +134,7 @@ def process_source(source, outdir, model_name):
     for note in atomic_notes:
         filename = note["filename"]
         chunk_content = note["content"]
+        raw_chunk_content = note.get("raw_chunk", "")
         tags = note.get("tags", [])
         
         # Format to markdown
@@ -149,6 +150,11 @@ def process_source(source, outdir, model_name):
         filepath = os.path.join(outdir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(final_markdown)
+            
+        # Write the raw chunk for validation/reconvert fallback
+        raw_filepath = f"{filepath}.raw.txt"
+        with open(raw_filepath, "w", encoding="utf-8") as f:
+            f.write(raw_chunk_content)
             
         print(f"Saved atomic note: {filepath}")
         

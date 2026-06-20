@@ -141,6 +141,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
         atomic_notes.append({
             "filename": filename,
             "content": formatted_content,
+            "raw_chunk": chunk,
             "tags": final_tags
         })
         

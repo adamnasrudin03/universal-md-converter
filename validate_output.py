@@ -53,15 +53,51 @@ def heuristic_validation(content):
     
     return round(score, 2), status, feedback
 
-def llm_validation(content, model_name='llama3'):
-    """Validasi komprehensif menggunakan Ollama LLM."""
+def llm_validation(content, file_path=None, model_name='llama3'):
+    """Validasi komprehensif menggunakan Ollama LLM dengan Ground Truth Validation jika memungkinkan."""
     if not OLLAMA_AVAILABLE:
         return 0, "ERROR", ["Ollama package is not installed."]
     
+    # Check for raw text file for comparative validation
+    raw_content = None
+    if file_path:
+        raw_filepath = f"{file_path}.raw.txt"
+        if os.path.exists(raw_filepath):
+            with open(raw_filepath, 'r', encoding='utf-8') as f:
+                raw_content = f.read()
+                
     # Pre-compute truncation to avoid nested expression inside f-string
     truncated_content = safe_truncate(content, 2500)
     
-    prompt = f"""
+    if raw_content:
+        truncated_raw = safe_truncate(raw_content, 2500)
+        prompt = f"""
+Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
+Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) dengan membandingkannya dengan teks sumber aslinya (RAW TEXT).
+
+RAW TEXT (Sumber Asli):
+{truncated_raw}
+
+DOKUMEN RAG (Hasil Ekstraksi):
+{truncated_content}
+
+Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
+1. Struktur (20 poin): Apakah memiliki bagian `Core Summary`? Apakah penggunaan Header Dinamis wajar (maksimal 3)?
+2. Kualitas RAG & Anti-Redundansi (20 poin): Apakah Core Summary kaya kata kunci? Apakah informasi padat dan TIDAK redundan antar bagian?
+3. Formatting & Visualisasi (20 poin): Apakah formatnya rapi (Markdown Table untuk perbandingan, Numbered List untuk langkah)? Terhindar dari wall-of-text?
+4. Akurasi & Konsistensi Fakta (40 poin): PENALTI BESAR jika RAG mengandung halusinasi, informasi yang tidak ada di RAW TEXT, atau salah mengutip angka/fakta dari RAW TEXT.
+
+Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
+{{
+  "score": 0,
+  "status": "NEEDS RECONVERT",
+  "feedback": ["alasan 1", "alasan 2"]
+}}
+
+Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= {MIN_SCORE_THRESHOLD}, atau "NEEDS RECONVERT" jika score < {MIN_SCORE_THRESHOLD}.
+"""
+    else:
+        prompt = f"""
 Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Generation (RAG).
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut.
 Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
@@ -130,7 +166,7 @@ def validate_file(file_path, use_llm=False, model_name='llama3'):
             content = f.read()
             
         if use_llm and OLLAMA_AVAILABLE:
-            score, status, feedback = llm_validation(content, model_name)
+            score, status, feedback = llm_validation(content, file_path, model_name)
         else:
             score, status, feedback = heuristic_validation(content)
             
