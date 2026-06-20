@@ -7,6 +7,7 @@ import sys
 from utils.prompts import RAG_EXTRACTION_PROMPT
 from utils.text_helpers import safe_truncate, get_recommended_model
 from utils.markdown_formatter import generate_markdown
+from utils.chunking import extract_global_context
 
 
 
@@ -67,7 +68,13 @@ def process_with_ai(raw_text, model_name='llama3'):
     Menggunakan Ollama untuk merestrukturisasi raw_text menjadi format JSON RAG.
     Logic ini disamakan dengan chunking.py
     """
-    prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(raw_text, 2500))
+    global_context = extract_global_context(raw_text, model_name)
+    if global_context:
+        global_context_block = f"\n[Konteks Global Dokumen: {global_context}]\n"
+    else:
+        global_context_block = ""
+        
+    prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(raw_text, 2500))
     
     try:
         response = ollama.chat(model=model_name, messages=[
