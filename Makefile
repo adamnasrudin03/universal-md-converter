@@ -1,4 +1,4 @@
-.PHONY: setup run validate validate-llm reconvert reconvert-llm clean
+.PHONY: setup run validate validate-llm reconvert reconvert-llm clean sync-path test
 
 # Default directory for validation if not specified
 DIR ?= outputs/notes/
@@ -57,3 +57,8 @@ sync-path:
 clean:
 	@echo "=> Menghapus seluruh file output..."
 	rm -rf outputs/*/*
+
+test:
+	@echo "=> Menjalankan seluruh unit test..."
+	./venv/bin/python -m pytest tests/ -v
+
