@@ -110,7 +110,7 @@ JANGAN menulis teks apapun sebelum atau sesudah JSON. JANGAN bungkus dalam markd
 }
 
 ═══════════════════════════════════════════
-
+{global_context_block}
 Teks mentah untuk diekstrak:
 {text_chunk}
 """

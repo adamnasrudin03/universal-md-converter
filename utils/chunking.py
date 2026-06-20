@@ -5,47 +5,95 @@ import ollama
 from utils.prompts import RAG_EXTRACTION_PROMPT
 from utils.text_helpers import safe_truncate
 
+def extract_global_context(text, model_name='llama3'):
+    """Extract a quick 2-3 sentence global context from the first part of the document."""
+    try:
+        truncated_text = safe_truncate(text, 2500)
+        prompt = f"""Tugas Anda adalah membaca teks berikut dan memberikan ringkasan 2-3 kalimat mengenai topik utamanya.
+Ringkasan ini akan digunakan sebagai konteks global. JANGAN menggunakan kata pengantar, langsung berikan ringkasan.
+Teks:
+{truncated_text}
+"""
+        response = ollama.chat(model=model_name, messages=[
+            {'role': 'user', 'content': prompt}
+        ], options={'temperature': 0.0})
+        
+        if isinstance(response, dict):
+            context = response.get('message', {}).get('content', '')
+        else:
+            msg = getattr(response, 'message', None)
+            context = getattr(msg, 'content', '') if msg else ''
+            
+        return context.strip()
+    except Exception as e:
+        print(f"Warning: Failed to extract global context: {e}")
+        return ""
+
+def recursive_markdown_split(text, max_words=600):
+    """Split text recursively using markdown headers, then paragraphs, then sentences."""
+    separators = [r'\n# ', r'\n## ', r'\n### ', r'\n\s*\n', r'\.\s']
+    
+    def _split(t, separator_index):
+        if not t.strip(): return []
+        if len(t.split()) <= max_words: return [t]
+        if separator_index >= len(separators):
+            words_list = t.split()
+            return [" ".join(words_list[i:i+max_words]) for i in range(0, len(words_list), max_words)]
+            
+        sep = separators[separator_index]
+        is_prefix_sep = '#' in sep
+        parts = re.split(f'({sep})', t)
+        
+        combined_parts, current_part = [], ""
+        for i, part in enumerate(parts):
+            if i % 2 == 1:
+                if is_prefix_sep:
+                    if current_part: combined_parts.append(current_part)
+                    current_part = part
+                else:
+                    current_part += part
+                    combined_parts.append(current_part)
+                    current_part = ""
+            else: current_part += part
+        if current_part: combined_parts.append(current_part)
+        combined_parts = [p for p in combined_parts if p.strip()]
+        
+        final_chunks, current_chunk = [], ""
+        for part in combined_parts:
+            if len(part.split()) > max_words:
+                if current_chunk:
+                    final_chunks.append(current_chunk)
+                    current_chunk = ""
+                final_chunks.extend(_split(part, separator_index + 1))
+            else:
+                if len((current_chunk + part).split()) > max_words and current_chunk:
+                    final_chunks.append(current_chunk)
+                    current_chunk = part
+                else: current_chunk += part
+        if current_chunk: final_chunks.append(current_chunk)
+        return final_chunks
+        
+    return _split(text, 0)
+
 def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
     """
-    Split text into chunks, then use Ollama to format each chunk into
-    a structured RAG-ready Knowledge Summary.
+    Split text into chunks recursively, then use Ollama to format each chunk.
     """
-    # Guard: check for empty text BEFORE chunking to avoid wasteful processing
+    # Guard: check for empty text
     if not text or not text.strip():
         return []
     
-    # Semantic paragraph chunking with overlap
-    paragraphs = re.split(r'\n\s*\n', text)
-    chunks = []
-    current_chunk = ""
-    current_words = 0
-    last_paragraph = ""
+    print("\n🌐 Extracting Global Context...", flush=True)
+    global_context = extract_global_context(text, model_name)
+    if global_context:
+        print(f"Context: {global_context}")
+        global_context_block = f"\n[Konteks Global Dokumen: {global_context}]\n"
+    else:
+        global_context_block = ""
     
-    for para in paragraphs:
-        para = para.strip()
-        if not para:
-            continue
-            
-        word_count = len(para.split())
-        
-        if current_words + word_count > max_words and current_words > 0:
-            chunks.append(current_chunk.strip())
-            # Mulai chunk baru dengan overlap (menyertakan paragraf terakhir dari chunk sebelumnya)
-            if last_paragraph and len(last_paragraph.split()) < (max_words / 2):
-                current_chunk = last_paragraph + "\n\n" + para + "\n\n"
-                current_words = len(last_paragraph.split()) + word_count
-            else:
-                current_chunk = para + "\n\n"
-                current_words = word_count
-        else:
-            current_chunk += para + "\n\n"
-            current_words += word_count
-            
-        last_paragraph = para
-            
-    if current_chunk.strip():
-        chunks.append(current_chunk.strip())
-        
+    # Recursive chunking
+    chunks = recursive_markdown_split(text, max_words)
+    
     atomic_notes = []
     used_filenames = set()
     
@@ -56,7 +104,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
         
         try:
             # Prompt the local LLM
-            prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(chunk, 2500))
+            prompt = RAG_EXTRACTION_PROMPT.replace("{global_context_block}", global_context_block).replace("{text_chunk}", safe_truncate(chunk, 2500))
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
