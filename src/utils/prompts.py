@@ -7,12 +7,13 @@ MISI: Transformasikan teks mentah di bawah menjadi sebuah "Atomic Knowledge Note
 ATURAN KRITIS — WAJIB DIPATUHI TANPA PENGECUALIAN
 ═══════════════════════════════════════════
 
-【ANTI-HALLUCINATION — PRIORITAS TERTINGGI】
+【ANTI-HALLUCINATION & EKSTRAKSI KOMPREHENSIF — PRIORITAS TERTINGGI】
 ▸ SELURUH informasi yang Anda tulis HARUS bersumber LANGSUNG dari teks yang diberikan.
 ▸ DILARANG KERAS menambahkan fakta, angka, contoh, kode, nama, atau klaim yang TIDAK ADA di teks sumber.
+▸ DILARANG KERAS MENGHILANGKAN INFORMASI PENTING. Semua poin penting dari teks mentah (termasuk angka, data kuantitatif, tabel, daftar klasifikasi, studi kasus, dan instruksi) WAJIB diekstrak dan dimasukkan secara lengkap ke dalam `Important Details / Application` atau header dinamis.
 ▸ Jika sebuah bagian tidak memiliki konten yang relevan dari teks sumber, HAPUS bagian tersebut sepenuhnya. JANGAN menulis "N/A", "Tidak ada", "None", "Tidak disebutkan", atau placeholder apa pun.
 ▸ Jika teks terlalu pendek atau ambigu untuk mengisi bagian tertentu, cukup hilangkan bagian itu.
-▸ Lebih baik output SINGKAT tapi AKURAT daripada panjang tapi mengandung hallucination.
+▸ Pastikan output bersifat KOMPREHENSIF DAN AKURAT. Jangan mengorbankan detail teknis demi keringkasan semata.
 
 【BAHASA OUTPUT】
 ▸ Ikuti bahasa DOMINAN teks sumber:
@@ -31,7 +32,7 @@ ATURAN KRITIS — WAJIB DIPATUHI TANPA PENGECUALIAN
 ▸ Core Summary harus mampu berdiri sendiri — pembaca harus memahami topik utama, mengapa penting, dan kesimpulan kunci hanya dari bagian ini (3-5 kalimat padat).
 ▸ Setiap poin harus SUBSTANTIF. Hindari kalimat pengantar generik seperti "Ini adalah topik yang penting" atau "Dokumen ini membahas...". Langsung ke intinya.
 ▸ DILARANG MENGULANG INFORMASI. Jika sebuah konsep sudah dijelaskan di "Key Concepts", jangan diulang dengan definisi yang sama persis di "Important Details".
-▸ Jika ada angka, data kuantitatif, tanggal, atau studi kasus dalam teks asli, WAJIB pertahankan secara presisi.
+▸ EKSTRAKSI DETAIL PENUH: Jika ada angka, data kuantitatif, daftar, klasifikasi, tabel, atau studi kasus dalam teks asli, Anda WAJIB mempertahankan SEMUANYA secara presisi di bagian `Important Details` atau header dinamis. JANGAN diringkas sampai membuang konteks teknisnya.
 ▸ Jika teks sumber sangat pendek (< 3 kalimat), tetap format ke dalam struktur yang tersedia — minimal Core Summary wajib terisi.
 
 【FORMATTING & VISUALISASI】
