@@ -115,9 +115,8 @@ Dokumen untuk dievaluasi:
             score = 0
         # Clamp score to valid range and validate status
         score = min(100, max(0, score))
-        status = parsed_json.get("status", "NEEDS RECONVERT")
-        if status not in ("OK", "NEEDS RECONVERT", "ERROR"):
-            status = "OK" if score >= 85 else "NEEDS RECONVERT"
+        # Selalu paksa status dihitung ulang dari score untuk menghindari halusinasi LLM
+        status = "OK" if score >= 85 else "NEEDS RECONVERT"
         feedback = parsed_json.get("feedback", []) or []
         if not isinstance(feedback, list):
             feedback = [str(feedback)]
