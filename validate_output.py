@@ -4,15 +4,8 @@ import argparse
 import json
 import sys
 
-def _safe_truncate(text, max_chars):
-    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
-    if len(text) <= max_chars:
-        return text
-    truncated = text[:max_chars]
-    last_space = truncated.rfind(' ')
-    if last_space > max_chars * 0.8:
-        return truncated[:last_space]
-    return truncated
+from utils.text_helpers import safe_truncate, get_recommended_model
+
 
 try:
     import ollama
@@ -33,8 +26,8 @@ def heuristic_validation(content):
     max_score = 100
     feedback = []
     
-    # Check for tags (must be #word, not ## heading)
-    if re.search(r'^#(?!#)[a-zA-Z]\w*', content, re.MULTILINE):
+    # Check for tags (must be #word, not ## heading) — supports multi-word tags like #trading-pattern
+    if re.search(r'^#(?!#)\S+', content, re.MULTILINE):
         score += 10
     else:
         feedback.append("Tags are missing.")
@@ -82,7 +75,7 @@ Format jawaban HANYA berupa JSON valid:
 }}
 
 Dokumen untuk dievaluasi:
-{_safe_truncate(content, 3000)}
+{safe_truncate(content, 3000)}
 """
     try:
         response = ollama.chat(model=model_name, messages=[
@@ -149,7 +142,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validasi output Markdown hasil generate.")
     parser.add_argument("path", help="Path file atau direktori output yang ingin divalidasi")
     parser.add_argument("--llm", action="store_true", help="Gunakan Ollama LLM untuk validasi yang lebih mendalam")
-    parser.add_argument("--model", default="llama3", help="Model Ollama yang digunakan (default: llama3)")
+    parser.add_argument("--model", default="auto", help="Model Ollama yang digunakan (default: auto-detect berdasarkan RAM)")
     
     args = parser.parse_args()
     
@@ -159,8 +152,12 @@ if __name__ == "__main__":
         print(f"Error: Path {target_path} tidak ditemukan.")
         sys.exit(1)
         
+    model = args.model
+    if model == "auto":
+        model = get_recommended_model()
+
     print(f"Memulai validasi pada: {target_path}")
-    print(f"Metode: {'LLM (' + args.model + ')' if args.llm else 'Heuristic/Regex'}\n")
+    print(f"Metode: {'LLM (' + model + ')' if args.llm else 'Heuristic/Regex'}\n")
     
     def print_result(res):
         status_color = "\033[92m" if res['status'] == "OK" else "\033[91m"
@@ -176,7 +173,7 @@ if __name__ == "__main__":
     
     if os.path.isfile(target_path):
         print(f"> Memvalidasi {target_path}...", flush=True)
-        res = validate_file(target_path, args.llm, args.model)
+        res = validate_file(target_path, args.llm, model)
         print_result(res)
     elif os.path.isdir(target_path):
         for root, dirs, files in os.walk(target_path):
@@ -184,5 +181,5 @@ if __name__ == "__main__":
                 if file.endswith(".md"):
                     file_path = os.path.join(root, file)
                     print(f"> Memvalidasi {file}...", flush=True)
-                    res = validate_file(file_path, args.llm, args.model)
+                    res = validate_file(file_path, args.llm, model)
                     print_result(res)

@@ -41,7 +41,7 @@ def convert_media(file_path, is_video=False):
         
         text = result.get('text', '').strip()
         if not text:
-            return "*No speech detected in media.*"
+            return ""
         return text
     except Exception as e:
         return f"Error transcribing media: {str(e)}"

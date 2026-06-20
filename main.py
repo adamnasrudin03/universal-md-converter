@@ -6,41 +6,9 @@ import ollama
 from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link
 from utils.markdown_formatter import generate_markdown
 from utils.chunking import chunk_text_intelligently
-import platform
-import subprocess
+from utils.text_helpers import get_recommended_model
 
-def get_recommended_model():
-    """Detects system RAM and returns an appropriate Ollama model name."""
-    model = "llama3.2" # Default to lightweight
-    try:
-        system = platform.system()
-        total_ram_gb = 0
-        
-        if system == "Darwin": # macOS
-            res = subprocess.run(['sysctl', '-n', 'hw.memsize'], capture_output=True, text=True)
-            if res.returncode == 0:
-                total_ram_bytes = int(res.stdout.strip())
-                total_ram_gb = total_ram_bytes / (1024**3)
-        elif system == "Linux":
-            with open('/proc/meminfo', 'r') as f:
-                for line in f:
-                    if 'MemTotal' in line:
-                        kb = int(line.split()[1])
-                        total_ram_gb = kb / (1024**2)
-                        break
-                        
-        if total_ram_gb >= 15.5: # 16GB RAM or more
-            model = "llama3"
-            print(f"🖥️  System RAM: {total_ram_gb:.1f} GB. Auto-selecting heavy model: '{model}'")
-        elif total_ram_gb > 0:
-            print(f"🖥️  System RAM: {total_ram_gb:.1f} GB. Auto-selecting lightweight model: '{model}'")
-        else:
-            print(f"🖥️  Auto-selecting lightweight model: '{model}' (Failed to read RAM)")
-            
-    except Exception as e:
-        print(f"🖥️  Auto-selecting lightweight model: '{model}' (System check error)")
-        
-    return model
+
 
 def ensure_model_installed(model_name):
     """Checks if the Ollama model is available locally, and pulls it if not."""

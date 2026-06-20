@@ -5,16 +5,9 @@ import json
 import sys
 
 from utils.prompts import RAG_EXTRACTION_PROMPT
+from utils.text_helpers import safe_truncate, get_recommended_model
 
-def _safe_truncate(text, max_chars):
-    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
-    if len(text) <= max_chars:
-        return text
-    truncated = text[:max_chars]
-    last_space = truncated.rfind(' ')
-    if last_space > max_chars * 0.8:
-        return truncated[:last_space]
-    return truncated
+
 
 try:
     import ollama
@@ -70,7 +63,7 @@ def process_with_ai(raw_text, model_name='llama3'):
     Menggunakan Ollama untuk merestrukturisasi raw_text menjadi format JSON RAG.
     Logic ini disamakan dengan chunking.py
     """
-    prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", _safe_truncate(raw_text, 3000))
+    prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(raw_text, 3000))
     
     try:
         response = ollama.chat(model=model_name, messages=[
@@ -200,7 +193,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mencari file yang gagal divalidasi dan meng-convert ulangnya dengan AI.")
     parser.add_argument("path", help="Path direktori output (contoh: output_notes/)")
     parser.add_argument("--llm-validate", action="store_true", help="Gunakan mode LLM untuk mencari file yang gagal")
-    parser.add_argument("--model", default="llama3", help="Model Ollama yang digunakan (default: llama3)")
+    parser.add_argument("--model", default="auto", help="Model Ollama yang digunakan (default: auto-detect berdasarkan RAM)")
     parser.add_argument("--retries", type=int, default=2, help="Jumlah maksimal percobaan reconvert jika masih gagal (default: 2)")
     
     args = parser.parse_args()
@@ -208,5 +201,8 @@ if __name__ == "__main__":
     if not os.path.isdir(args.path):
         print(f"Error: {args.path} bukan direktori yang valid.")
         sys.exit(1)
-        
-    reconvert_directory(args.path, args.llm_validate, args.model, args.retries)
+    model = args.model
+    if model == "auto":
+        model = get_recommended_model()
+
+    reconvert_directory(args.path, args.llm_validate, model, args.retries)

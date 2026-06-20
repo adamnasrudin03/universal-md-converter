@@ -28,7 +28,7 @@ def convert_link(url):
         markdown_text = md(html_content, heading_style="ATX")
         result = markdown_text.strip()
         if not result:
-            return "*No text could be extracted from this web page.*"
+            return ""
         return result
     except requests.exceptions.Timeout:
         return "Error extracting Web Link: Request timed out."

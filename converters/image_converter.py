@@ -17,12 +17,17 @@ def convert_image(file_path):
         sharpness = ImageEnhance.Sharpness(image)
         image = sharpness.enhance(1.5)
         
-        # Ekstrak teks
-        # (Catatan: Jika hasil masih jelek karena bahasa, pastikan tesseract-ocr-ind terinstall dan tambahkan argumen: lang='ind+eng')
-        text = pytesseract.image_to_string(image)
+        # Ekstrak teks — gunakan multi-language untuk mendukung konten Indonesia + Inggris
+        # Pastikan tesseract-ocr-ind terinstall: sudo apt install tesseract-ocr-ind (Linux)
+        # atau: brew install tesseract-lang (macOS)
+        try:
+            text = pytesseract.image_to_string(image, lang='ind+eng')
+        except Exception:
+            # Fallback jika language pack tidak tersedia
+            text = pytesseract.image_to_string(image)
         
         if not text.strip():
-            return "*No text could be extracted from this image.*"
+            return ""
         return text
     except Exception as e:
         return f"Error extracting Image text: {str(e)}"

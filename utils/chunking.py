@@ -3,22 +3,12 @@ import json
 import ollama
 
 from utils.prompts import RAG_EXTRACTION_PROMPT
-
-def _safe_truncate(text, max_chars):
-    """Truncate text to max_chars without breaking multi-byte UTF-8 characters."""
-    if len(text) <= max_chars:
-        return text
-    # Encode to UTF-8, truncate bytes, then decode safely
-    truncated = text[:max_chars]
-    # Find the last space within the truncated text to avoid mid-word cuts
-    last_space = truncated.rfind(' ')
-    if last_space > max_chars * 0.8:  # Only use space-break if it's not too far back
-        return truncated[:last_space]
-    return truncated
+from utils.text_helpers import safe_truncate
 
 def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'):
     """
-    Split text into chunks, then use Ollama to format the text specifically for Trading RAG.
+    Split text into chunks, then use Ollama to format each chunk into
+    a structured RAG-ready Knowledge Summary.
     """
     # Guard: check for empty text BEFORE chunking to avoid wasteful processing
     if not text or not text.strip():
@@ -46,8 +36,6 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     atomic_notes = []
     used_filenames = set()
     
-
-    
     for idx, chunk in enumerate(chunks):
         filename = f"{base_name}-part-{idx+1}.md"
         formatted_content = chunk
@@ -55,7 +43,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
         
         try:
             # Prompt the local LLM
-            prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", _safe_truncate(chunk, 2500))
+            prompt = RAG_EXTRACTION_PROMPT.replace("{text_chunk}", safe_truncate(chunk, 2500))
             
             print(f"\n⏳ Memproses chunk {idx+1} dari {len(chunks)} menggunakan AI ({model_name})...", flush=True)
             
@@ -133,15 +121,13 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
             # We don't 'pass' here, we just let it use the fallback formatted_content (raw chunk)
 
         # Prevent any filename collision (both from AI slug or fallback)
-        candidate = filename
+        # Use counter on the original base to avoid cascading suffixes like name-1-1-1.md
+        base_filename = filename
         counter = 1
-        while candidate in used_filenames:
-            if candidate.endswith(".md"):
-                candidate = f"{candidate[:-3]}-{counter}.md"
-            else:
-                candidate = f"{candidate}-{counter}.md"
+        while filename in used_filenames:
+            stem = base_filename[:-3] if base_filename.endswith(".md") else base_filename
+            filename = f"{stem}-{counter}.md"
             counter += 1
-        filename = candidate
         
         used_filenames.add(filename)
         atomic_notes.append({

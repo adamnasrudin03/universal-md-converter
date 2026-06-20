@@ -8,6 +8,6 @@ def convert_pdf(file_path):
                 page_text = page.extract_text()
                 if page_text:
                     text_content.append(f"## Page {i + 1}\n\n{page_text}")
-        return "\n\n".join(text_content) if text_content else "*No text could be extracted from this PDF.*"
+        return "\n".join(text_content) if text_content else ""
     except Exception as e:
         return f"Error extracting PDF: {str(e)}"
