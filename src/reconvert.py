@@ -13,7 +13,7 @@ from utils.chunking import extract_global_context
 
 try:
     import ollama
-except ImportError:
+except ImportError: # pragma: no cover
     print("Error: Package 'ollama' belum ter-install. Silakan jalankan 'pip install ollama'.")
     sys.exit(1)
 

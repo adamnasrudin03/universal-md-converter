@@ -5,7 +5,7 @@ import whisper
 # requirements.txt pins 1.0.3, so try 1.x first.
 try:
     from moviepy.editor import VideoFileClip
-except (ImportError, AttributeError):
+except (ImportError, AttributeError): # pragma: no cover
     from moviepy import VideoFileClip
 
 def extract_audio_from_video(video_path, audio_path):

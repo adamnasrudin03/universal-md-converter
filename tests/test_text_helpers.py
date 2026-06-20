@@ -101,6 +101,20 @@ class TestGetRecommendedModel(unittest.TestCase):
         with patch('builtins.open', mock_open):
             self.assertEqual(get_recommended_model(), "llama3")
 
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_linux_16gb(self, mock_system):
+        mock_system.return_value = "Linux"
+        with patch("builtins.open", mock_open(read_data="MemTotal:       16777216 kB\n")) as mock_file:
+            model = get_recommended_model()
+            self.assertEqual(model, "llama3")
+
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_linux_8gb(self, mock_system):
+        mock_system.return_value = "Linux"
+        with patch("builtins.open", mock_open(read_data="MemTotal:       8388608 kB\n")) as mock_file:
+            model = get_recommended_model()
+            self.assertEqual(model, "llama3.2")
+
 if __name__ == '__main__':
     unittest.main()
 

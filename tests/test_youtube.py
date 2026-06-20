@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import urllib.parse
 import unittest
+from unittest.mock import patch, MagicMock
 
 
 def extract_video_id(url):
@@ -74,6 +75,33 @@ class TestYoutubeVideoIdExtraction(unittest.TestCase):
     def test_empty_string(self):
         self.assertIsNone(extract_video_id(""))
 
+    @patch('src.converters.youtube_converter.YouTubeTranscriptApi')
+    def test_convert_youtube_shorts(self, mock_api):
+        mock_list = MagicMock()
+        mock_api.return_value.list.return_value = mock_list
+        mock_transcript = MagicMock()
+        mock_transcript.fetch.return_value = [{'text': 'shorts text'}]
+        mock_list.find_transcript.return_value = mock_transcript
+        
+        result = convert_youtube("https://www.youtube.com/shorts/DEF456")
+        self.assertEqual(result, "shorts text")
+        mock_api.return_value.list.assert_called_with("DEF456")
+
+    @patch('src.converters.youtube_converter.YouTubeTranscriptApi')
+    def test_convert_youtube_youtu_be(self, mock_api):
+        mock_list = MagicMock()
+        mock_api.return_value.list.return_value = mock_list
+        mock_transcript = MagicMock()
+        mock_transcript.fetch.return_value = [{'text': 'youtu be text'}]
+        mock_list.find_transcript.return_value = mock_transcript
+        
+        result = convert_youtube("https://youtu.be/XYZ789")
+        self.assertEqual(result, "youtu be text")
+        mock_api.return_value.list.assert_called_with("XYZ789")
+
+    def test_convert_youtube_invalid_url(self):
+        result = convert_youtube("https://www.youtube.com/watch")
+        self.assertIn("Invalid URL format", result)
 
 if __name__ == '__main__':
     unittest.main()

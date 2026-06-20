@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from validate_output import heuristic_validation, MIN_SCORE_THRESHOLD
 import unittest
+from unittest.mock import patch, MagicMock
 
 
 def _make_valid_markdown(content_body="Some content here to pad word count " * 5,

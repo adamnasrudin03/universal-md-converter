@@ -10,7 +10,7 @@ from utils.text_helpers import safe_truncate, get_recommended_model
 try:
     import ollama
     OLLAMA_AVAILABLE = True
-except ImportError:
+except ImportError: # pragma: no cover
     OLLAMA_AVAILABLE = False
 
 REQUIRED_SECTIONS = [

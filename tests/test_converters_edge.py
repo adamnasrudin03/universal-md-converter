@@ -169,7 +169,65 @@ class TestMediaConverter:
         mock_video_class.return_value = mock_video
         from src.converters.media_converter import extract_audio_from_video
         res = extract_audio_from_video("test.mp4", "out.wav")
-        assert res is True # Exception ignoreds
+        assert res is True # Exception ignored
+
+import unittest
+from src.converters.ig_converter import convert_ig_link
+class TestIGConverterEdgeCases(unittest.TestCase):
+    @patch('src.converters.ig_converter.instaloader.Instaloader')
+    @patch('src.converters.ig_converter.instaloader.Post')
+    @patch('src.converters.ig_converter.tempfile.mkdtemp')
+    @patch('src.converters.ig_converter.shutil.rmtree')
+    def test_convert_ig_link_missing_shortcode(self, mock_rmtree, mock_mkdtemp, mock_post, mock_loader):
+        res1 = convert_ig_link("https://www.instagram.com/p/")
+        self.assertIn("Missing shortcode", res1)
+
+        res2 = convert_ig_link("https://www.instagram.com/reel/")
+        self.assertIn("Missing shortcode", res2)
+
+        res3 = convert_ig_link("https://www.instagram.com/reels/")
+        self.assertIn("Missing shortcode", res3)
+
+    @patch('src.converters.ig_converter.instaloader.Instaloader')
+    @patch('src.converters.ig_converter.instaloader.Post')
+    @patch('src.converters.ig_converter.tempfile.mkdtemp')
+    @patch('src.converters.ig_converter.os.walk')
+    @patch('src.converters.ig_converter.shutil.rmtree')
+    def test_convert_ig_link_caption_and_no_images(self, mock_rmtree, mock_walk, mock_mkdtemp, mock_post, mock_loader):
+        mock_loader_instance = MagicMock()
+        mock_loader.return_value = mock_loader_instance
+        
+        mock_post_instance = MagicMock()
+        mock_post_instance.caption = "This is a caption"
+        mock_post.from_shortcode.return_value = mock_post_instance
+        
+        mock_mkdtemp.return_value = "tempdir"
+        mock_walk.return_value = [] # No files
+        
+        res = convert_ig_link("https://www.instagram.com/p/ABC123def/")
+        self.assertIn("This is a caption", res)
+        self.assertIn("No image slides found", res)
+
+    @patch('src.converters.ig_converter.instaloader.Instaloader')
+    @patch('src.converters.ig_converter.instaloader.Post')
+    @patch('src.converters.ig_converter.tempfile.mkdtemp')
+    @patch('src.converters.ig_converter.os.walk')
+    @patch('src.converters.ig_converter.shutil.rmtree')
+    @patch('src.converters.ig_converter.convert_image')
+    def test_convert_ig_link_reels_success(self, mock_convert_image, mock_rmtree, mock_walk, mock_mkdtemp, mock_post, mock_loader):
+        mock_loader_instance = MagicMock()
+        mock_loader.return_value = mock_loader_instance
+        
+        mock_post_instance = MagicMock()
+        mock_post_instance.caption = ""
+        mock_post.from_shortcode.return_value = mock_post_instance
+        
+        mock_mkdtemp.return_value = "tempdir"
+        mock_walk.return_value = [("tempdir", [], ["test.png"])]
+        mock_convert_image.return_value = "Slide text OCR"
+        
+        res = convert_ig_link("https://www.instagram.com/reels/ABC123def/")
+        self.assertIn("Slide text OCR", res)
 
 # --- pdf_converter.py ---
 from src.converters.pdf_converter import convert_pdf

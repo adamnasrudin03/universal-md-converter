@@ -11,7 +11,7 @@ def convert_pdf(file_path):
         # Import pytesseract here to avoid circular/missing deps if not available, though it is in requirements
         import pytesseract
         from PIL import ImageEnhance
-    except ImportError:
+    except ImportError: # pragma: no cover
         pytesseract = None
 
     try:

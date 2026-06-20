@@ -36,7 +36,7 @@ class TestGetBaseTitle(unittest.TestCase):
         title = get_base_title("/path/[Axel] ebook.pdf")
         self.assertEqual(title, "axel-ebook")
 
-
+from unittest.mock import patch, mock_open
 class TestSyncPath(unittest.TestCase):
 
     def setUp(self):
@@ -50,6 +50,42 @@ class TestSyncPath(unittest.TestCase):
         with open(path, 'w', encoding='utf-8') as f:
             f.write(content)
         return path
+
+    @patch('src.sync_path.os.walk')
+    @patch('src.sync_path.os.rename')
+    @patch('src.sync_path.os.path.exists')
+    def test_sync_path_rename_conflict(self, mock_exists, mock_rename, mock_walk):
+        mock_walk.return_value = [("root", [], ["oldfile-chunk.md"])]
+        # We want exists to be True when it checks new_filepath and new_raw
+        mock_exists.return_value = True
+        
+        with patch('builtins.open', mock_open(read_data='source_path: "oldfile.pdf"')):
+            sync_path("oldfile.pdf", "newfile.pdf", "test_dir")
+            
+        mock_rename.assert_not_called()
+
+    @patch('src.sync_path.os.walk')
+    @patch('src.sync_path.os.rename')
+    @patch('src.sync_path.os.path.exists')
+    def test_sync_path_rename_raw_conflict(self, mock_exists, mock_rename, mock_walk):
+        mock_walk.return_value = [("root", [], ["oldfile-chunk.md"])]
+        # We want exists to be False for new_filepath, True for old_raw, and True for new_raw
+        def exists_side_effect(path):
+            if "newfile" in path and not path.endswith(".raw.txt"):
+                return False
+            if "raw.txt" in path:
+                return True
+            return False
+        mock_exists.side_effect = exists_side_effect
+        
+        with patch('builtins.open', mock_open(read_data='source_path: "oldfile.pdf"')):
+            sync_path("oldfile.pdf", "newfile.pdf", "test_dir")
+            
+        # Should rename the .md file, but not the .raw.txt file
+        mock_rename.assert_called_once_with(
+            os.path.join('root', 'oldfile-chunk.md'),
+            os.path.join('root', 'newfile-chunk.md')
+        )
 
     def test_renames_md_file(self):
         """sync_path should rename files matching old prefix."""

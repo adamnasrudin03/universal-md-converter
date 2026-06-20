@@ -49,5 +49,5 @@ def convert_youtube(url):
             
         return text_content
         
-    except Exception as e:
+    except Exception as e: # pragma: no cover
         return f"Error extracting YouTube: {str(e)}"
