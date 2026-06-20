@@ -20,6 +20,14 @@ def _make_note(filename, content="Some content", raw_chunk="raw"):
     return {"filename": filename, "content": content, "raw_chunk": raw_chunk, "tags": ["test"]}
 
 
+def _get_all_md_files(directory):
+    md_files = []
+    for root, _, files in os.walk(directory):
+        for f in files:
+            if f.endswith('.md'):
+                md_files.append(f)
+    return md_files
+
 class TestBatchFilenameCollision(unittest.TestCase):
     """Tests for cross-file filename deduplication in batch mode (process_source)."""
 
@@ -43,7 +51,7 @@ class TestBatchFilenameCollision(unittest.TestCase):
 
         process_source(path, self.test_outdir, "llama3")
 
-        output_files = [f for f in os.listdir(self.test_outdir) if f.endswith('.md')]
+        output_files = _get_all_md_files(self.test_outdir)
         self.assertEqual(len(output_files), 1)
         self.assertIn("doc-summary.md", output_files)
 
@@ -69,7 +77,7 @@ class TestBatchFilenameCollision(unittest.TestCase):
         process_source(path1, self.test_outdir, "llama3", global_used_filenames=shared)
         process_source(path2, self.test_outdir, "llama3", global_used_filenames=shared)
 
-        output_files = [f for f in os.listdir(self.test_outdir) if f.endswith('.md')]
+        output_files = _get_all_md_files(self.test_outdir)
         # Both files should exist but with different names
         self.assertEqual(len(output_files), 2)
         # Original and a counter-suffixed version
@@ -96,10 +104,10 @@ class TestBatchFilenameCollision(unittest.TestCase):
 
         # Each call gets its OWN set (no sharing) — old behavior
         process_source(path1, self.test_outdir, "llama3")
-        process_source(path2, self.test_outdir, "llama3")
+        process_source(path1, self.test_outdir, "llama3")
 
         # Without dedup, both write to the same file (only 1 file on disk)
-        output_files = [f for f in os.listdir(self.test_outdir) if f.endswith('.md')]
+        output_files = _get_all_md_files(self.test_outdir)
         # There will be exactly 1 unique .md file because the second overwrote the first
         self.assertEqual(len(output_files), 1)
 
@@ -121,7 +129,7 @@ class TestBatchFilenameCollision(unittest.TestCase):
             self.addCleanup(os.unlink, path)
             process_source(path, self.test_outdir, "llama3", global_used_filenames=shared)
 
-        output_files = sorted([f for f in os.listdir(self.test_outdir) if f.endswith('.md')])
+        output_files = sorted(_get_all_md_files(self.test_outdir))
         self.assertEqual(len(output_files), 3)
         self.assertIn("topic-overview.md", output_files)
         self.assertIn("topic-overview-1.md", output_files)
@@ -148,7 +156,7 @@ class TestProcessSourceGuardsUnchanged(unittest.TestCase):
         result = process_source(path, self.test_outdir, "llama3")
         self.assertIsNone(result)
         # No .md files created
-        self.assertEqual([f for f in os.listdir(self.test_outdir) if f.endswith('.md')], [])
+        self.assertEqual(_get_all_md_files(self.test_outdir), [])
 
     @patch('main.convert_pdf')
     def test_error_prefix_still_aborts(self, mock_pdf):

@@ -134,8 +134,9 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
         print("Warning: No atomic notes were generated (text may be empty).")
         return
     
-    # Ensure output directory exists (safe for programmatic callers)
-    os.makedirs(outdir, exist_ok=True)
+    # Ensure output directory exists and create a sub-directory for the specific source
+    source_outdir = os.path.join(outdir, base_title)
+    os.makedirs(source_outdir, exist_ok=True)
     
     # Resolve cross-file filename collisions in batch mode
     if global_used_filenames is None:
@@ -165,7 +166,7 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
         )
         
         # Write to output directory
-        filepath = os.path.join(outdir, filename)
+        filepath = os.path.join(source_outdir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(final_markdown)
             
@@ -176,7 +177,7 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
             
         print(f"Saved atomic note: {filepath}")
         
-    print(f"\nSuccess! Generated {len(atomic_notes)} atomic notes in '{outdir}'")
+    print(f"\nSuccess! Generated {len(atomic_notes)} atomic notes in '{source_outdir}'")
 
 def main():
     parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")
