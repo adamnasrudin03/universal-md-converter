@@ -25,11 +25,12 @@ def heuristic_validation(content):
     max_score = 100
     feedback = []
     
-    # Check for tags (must be #word, not ## heading) — supports multi-word tags like #trading-pattern
-    if re.search(r'^#(?!#)\S+', content, re.MULTILINE):
+    # Check for tags in YAML frontmatter (modern format: tags: ["tag1", "tag2"])
+    # The old inline #hashtag format is no longer used; generate_markdown() emits YAML frontmatter.
+    if re.search(r'^tags:\s*\[.+\]', content, re.MULTILINE):
         score += 10
     else:
-        feedback.append("Tags are missing.")
+        feedback.append("Tags are missing (expected YAML frontmatter 'tags: [...]' with at least one tag).")
         
     # Check for sections
     section_points = 80 / len(REQUIRED_SECTIONS)

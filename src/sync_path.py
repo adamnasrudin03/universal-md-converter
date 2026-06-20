@@ -31,7 +31,16 @@ def sync_path(old_path, new_path, directory):
                     content = f.read()
                 
                 # Update isi Metadata Source Path
-                new_content = content.replace(f"**Source Path/URL:** {old_path}", f"**Source Path/URL:** {new_path}")
+                # Support modern YAML frontmatter format: source_path: "..."
+                new_content = content.replace(
+                    f'source_path: "{old_path}"',
+                    f'source_path: "{new_path}"'
+                )
+                # Also support legacy bold-format metadata (backward compat)
+                new_content = new_content.replace(
+                    f"**Source Path/URL:** {old_path}",
+                    f"**Source Path/URL:** {new_path}"
+                )
                 
                 # Buat nama file baru (hanya ganti prefix pertama)
                 new_filename = file.replace(f"{old_prefix}-", f"{new_prefix}-", 1)
