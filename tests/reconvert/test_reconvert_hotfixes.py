@@ -257,5 +257,47 @@ Text content
         self.assertEqual(mock_process_ai.call_count, 2)
         mock_generate_md.assert_called_once()
 
+    def test_extract_raw_content_invalid_file(self):
+        """Ensure extract_raw_content returns empty strings on file read exceptions instead of crashing."""
+        metadata, raw_text, footer = extract_raw_content("non_existent_file_xyz_123.md")
+        self.assertEqual(metadata, "")
+        self.assertEqual(raw_text, "")
+        self.assertEqual(footer, "")
+
+    @patch('ollama.chat')
+    @patch('reconvert.extract_global_context')
+    def test_tags_arbitrary_type_coercion(self, mock_extract_global, mock_chat):
+        """Ensure tags of arbitrary types (e.g., dict or integer) are coerced and handled safely."""
+        mock_extract_global.return_value = ""
+        mock_response = [
+            MagicMock(message=MagicMock(content='{"rag_content": "some content", "tags": {"key": "val"}}'))
+        ]
+        mock_chat.return_value = mock_response
+        rag_content, tags = process_with_ai("raw text here", model_name="dummy")
+        self.assertIn("key-val", tags)
+
+    @patch('reconvert.generate_markdown')
+    @patch('reconvert.process_with_ai')
+    @patch('reconvert.validate_file')
+    @patch('reconvert.save_validation_report')
+    def test_feedback_loop_guard_non_list(self, mock_save_report, mock_validate, mock_process_ai, mock_generate_md):
+        """Ensure non-list/non-iterable validation feedback does not crash the reconvert loop."""
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: [os.unlink(os.path.join(temp_dir, f)) for f in os.listdir(temp_dir)] + [os.rmdir(temp_dir)])
+        
+        file_path = os.path.join(temp_dir, "test_feedback.md")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("Some text\n")
+            
+        mock_validate.side_effect = [
+            {"status": "NEEDS RECONVERT", "score": 50, "feedback": None}, # None feedback
+            {"status": "OK", "score": 100, "feedback": []}
+        ]
+        mock_process_ai.return_value = ("New content", ["tag"])
+        mock_generate_md.return_value = "Generated md"
+
+        reconvert_directory(temp_dir, use_llm_validation=False, max_retries=1)
+        mock_process_ai.assert_called_once()
+
 if __name__ == '__main__':
     unittest.main()

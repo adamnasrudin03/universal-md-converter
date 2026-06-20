@@ -24,8 +24,12 @@ def extract_raw_content(file_path):
     Ekstrak metadata dan teks mentah dari file markdown yang gagal.
     Format menggunakan YAML frontmatter secara robust (mengabaikan --- di dalam teks).
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+    except Exception as e:
+        print(f"Error reading file {file_path}: {e}")
+        return "", "", ""
         
     # First, securely remove the footer without relying on '---' count
     footer_text = "*Converted using Universal MD Converter*"
@@ -144,6 +148,8 @@ def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
         valid_tags = []
         
         if tags_list:
+            if not isinstance(tags_list, (list, str)):
+                tags_list = [str(tags_list)]
             if isinstance(tags_list, str):
                 tags_list = tags_list.split(',')
             if isinstance(tags_list, list):
@@ -253,7 +259,15 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 print(f"  🔄 Retrying... (Attempt {attempt+1}/{max_retries}) dengan temperature {temp}")
             
             print(f"  Feedback error sebelumnya:")
-            for fb in validation_res['feedback']:
+            feedback_list = validation_res.get('feedback', []) or []
+            if isinstance(feedback_list, str):
+                feedback_list = [feedback_list]
+            elif not isinstance(feedback_list, list):
+                try:
+                    feedback_list = list(feedback_list)
+                except Exception:
+                    feedback_list = [str(feedback_list)]
+            for fb in feedback_list:
                 print(f"    - {fb}")
                 
             if not raw_text.strip():
