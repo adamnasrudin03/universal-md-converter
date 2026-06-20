@@ -15,6 +15,7 @@ outputs/
 # Temporary directories and files
 temp_ig_*/
 *.temp.wav
+temp*
 
 # Test Coverage
 .coverage*
