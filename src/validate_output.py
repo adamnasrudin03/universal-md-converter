@@ -245,8 +245,21 @@ if __name__ == "__main__":
         print(f"> Memvalidasi {target_path}...", flush=True)
         res = validate_file(target_path, args.llm, model)
         print_result(res)
+        # Simpan ke validation_report.json di direktori file tersebut
+        try:
+            report_file = os.path.join(os.path.dirname(target_path), "validation_report.json")
+            dir_results = {}
+            if os.path.exists(report_file):
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    dir_results = json.load(f)
+            dir_results[os.path.basename(target_path)] = res
+            with open(report_file, "w", encoding="utf-8") as f:
+                json.dump(dir_results, f, indent=2, ensure_ascii=False)
+        except Exception: # pragma: no cover
+            pass
     elif os.path.isdir(target_path):
         for root, dirs, files in os.walk(target_path):
+            dir_results = {}
             for file in files:
                 if file.startswith('.'):
                     continue
@@ -255,3 +268,13 @@ if __name__ == "__main__":
                     print(f"> Memvalidasi {file}...", flush=True)
                     res = validate_file(file_path, args.llm, model)
                     print_result(res)
+                    dir_results[file] = res
+            
+            if dir_results:
+                report_file = os.path.join(root, "validation_report.json")
+                try:
+                    with open(report_file, "w", encoding="utf-8") as f:
+                        json.dump(dir_results, f, indent=2, ensure_ascii=False)
+                    print(f"✅ Laporan validasi disimpan ke: {report_file}")
+                except Exception as e: # pragma: no cover
+                    print(f"⚠️ Gagal menyimpan laporan validasi: {e}")

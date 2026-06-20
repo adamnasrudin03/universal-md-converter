@@ -152,6 +152,17 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
     files_to_reconvert = []
     
     for root, dirs, files in os.walk(directory):
+        # Load cache if available
+        dir_cache = {}
+        report_file = os.path.join(root, "validation_report.json")
+        if not force and os.path.exists(report_file):
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    dir_cache = json.load(f)
+                print(f"📦 Ditemukan cache validasi di {root}")
+            except Exception: # pragma: no cover
+                pass
+
         for file in files:
             if file.startswith('.'):
                 continue
@@ -165,8 +176,21 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                     files_to_reconvert.append((file_path, {"status": "NEEDS RECONVERT", "feedback": ["Forced reconvert"], "score": 0}))
                     continue
                 
-                # Validasi file
-                res = validate_file(file_path, use_llm_validation, model_name)
+                # Gunakan cache jika mtime file MD lebih lama atau sama dengan mtime cache
+                res = None
+                if file in dir_cache:
+                    try:
+                        md_mtime = os.path.getmtime(file_path)
+                        cache_mtime = os.path.getmtime(report_file)
+                        if cache_mtime >= md_mtime:
+                            res = dir_cache[file]
+                            print("[CACHE] ", end="")
+                    except Exception: # pragma: no cover
+                        pass
+
+                # Validasi file jika tidak ada di cache atau cache usang
+                if not res:
+                    res = validate_file(file_path, use_llm_validation, model_name)
                 
                 if res['status'] == "NEEDS RECONVERT":
                     print(f"❌ BUTUH RECONVERT ({res['score']}/100)")
