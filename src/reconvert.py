@@ -70,7 +70,7 @@ def extract_raw_content(file_path):
             raw_text = content.strip()
         return metadata, raw_text, ""
 
-def process_with_ai(raw_text, model_name='llama3'):
+def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
     """
     Menggunakan Ollama untuk merestrukturisasi raw_text menjadi format JSON RAG.
     Logic ini disamakan dengan chunking.py
@@ -86,7 +86,7 @@ def process_with_ai(raw_text, model_name='llama3'):
     try:
         response = ollama.chat(model=model_name, messages=[
             {'role': 'user', 'content': prompt}
-        ], format='json', stream=True, options={'temperature': 0.0})
+        ], format='json', stream=True, options={'temperature': temperature})
         
         response_text = ""
         for stream_chunk in response:
@@ -99,10 +99,15 @@ def process_with_ai(raw_text, model_name='llama3'):
             if token:
                 response_text += token
         # print()  # newline after streaming
+        
+        # Clean markdown code block syntax if LLM hallucinates it
+        clean_response = re.sub(r'^```(?:json)?\n?', '', response_text.strip(), flags=re.IGNORECASE)
+        clean_response = re.sub(r'\n?```$', '', clean_response).strip()
+        
         try:
-            parsed_json = json.loads(response_text)
+            parsed_json = json.loads(clean_response)
         except json.JSONDecodeError:
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            json_match = re.search(r'\{.*\}', clean_response, re.DOTALL)
             if json_match:
                 try:
                     parsed_json = json.loads(json_match.group(0))
@@ -149,7 +154,7 @@ def process_with_ai(raw_text, model_name='llama3'):
         print(f"Error during AI processing: {str(e)}")
         return None, []
 
-def reconvert_directory(directory, use_llm_validation=False, model_name='llama3', max_retries=2, force=False):
+def reconvert_directory(directory, use_llm_validation=False, model_name='llama3', max_retries=3, force=False):
     """Mencari file yang gagal validasi dan melakukan reconvert dengan auto-retry. Jika force=True, semua file di direktori akan diproses ulang tanpa validasi."""
     print(f"🔍 Mencari file yang butuh direconvert di {directory}...\n")
     if force:
@@ -234,8 +239,11 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             raw_text = raw_text_from_md
             
         for attempt in range(max_retries):
+            # Escalating temperature logic
+            temp = 0.0 if attempt == 0 else (0.3 if attempt == 1 else 0.7)
+            
             if attempt > 0:
-                print(f"  🔄 Retrying... (Attempt {attempt+1}/{max_retries})")
+                print(f"  🔄 Retrying... (Attempt {attempt+1}/{max_retries}) dengan temperature {temp}")
             
             print(f"  Feedback error sebelumnya:")
             for fb in validation_res['feedback']:
@@ -247,7 +255,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 
             # 2. Proses ulang menggunakan AI
             print(f"  ⏳ Memanggil Ollama ({model_name}) untuk convert ulang...")
-            new_rag_content, new_tags = process_with_ai(raw_text, model_name)
+            new_rag_content, new_tags = process_with_ai(raw_text, model_name, temperature=temp)
             
             if new_rag_content:
                 # Ekstrak title untuk disisipkan kembali
@@ -310,7 +318,7 @@ if __name__ == "__main__":
     parser.add_argument("path", help="Path direktori output (contoh: output_notes/)")
     parser.add_argument("--llm-validate", action="store_true", help="Gunakan mode LLM untuk mencari file yang gagal")
     parser.add_argument("--model", default="auto", help="Model Ollama yang digunakan (default: auto-detect berdasarkan RAM)")
-    parser.add_argument("--retries", type=int, default=2, help="Jumlah maksimal percobaan reconvert jika masih gagal (default: 2)")
+    parser.add_argument("--retries", type=int, default=3, help="Jumlah maksimal percobaan reconvert jika masih gagal (default: 3)")
     parser.add_argument("--force", action="store_true", help="Lewati proses validasi dan proses ulang semua file di direktori")
     
     args = parser.parse_args()

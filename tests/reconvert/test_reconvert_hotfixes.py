@@ -92,5 +92,58 @@ Some broken text
         self.assertEqual(kwargs['source_type'], "Web Link")
         self.assertEqual(kwargs['source_path_or_url'], "https://example.com/test")
 
+    @patch('ollama.chat')
+    @patch('reconvert.extract_global_context')
+    def test_process_with_ai_markdown_json_wrapping(self, mock_extract_global, mock_chat):
+        """Bug Fix: Ensure JSON wrapped in ```json ... ``` is handled safely."""
+        mock_extract_global.return_value = ""
+        
+        # Mock ollama to return json wrapped in markdown
+        mock_response = [
+            MagicMock(message=MagicMock(content='```json\n{"rag_content": "some content", "tags": "testing"}\n```'))
+        ]
+        mock_chat.return_value = mock_response
+
+        rag_content, tags = process_with_ai("raw text here", model_name="dummy", temperature=0.0)
+        
+        # Tags should be parsed correctly despite the markdown
+        self.assertEqual(rag_content, "some content")
+        self.assertIn("testing", tags)
+
+    @patch('reconvert.generate_markdown')
+    @patch('reconvert.process_with_ai')
+    @patch('reconvert.validate_file')
+    @patch('reconvert.save_validation_report')
+    def test_reconvert_escalating_temperature(self, mock_save_report, mock_validate, mock_process_ai, mock_generate_md):
+        """Feature: Ensure Deep Audit Hotfix correctly escalates temperature over 3 retries."""
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: [os.unlink(os.path.join(temp_dir, f)) for f in os.listdir(temp_dir)] + [os.rmdir(temp_dir)])
+        
+        file_path = os.path.join(temp_dir, "temp_test.md")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("Some text\n")
+            
+        # Mock validation to fail initially, then fail 2 times inside the loop, and succeed on the 3rd
+        mock_validate.side_effect = [
+            {"status": "NEEDS RECONVERT", "score": 50, "feedback": ["Initial"]},
+            {"status": "NEEDS RECONVERT", "score": 50, "feedback": ["Attempt 1"]},
+            {"status": "NEEDS RECONVERT", "score": 50, "feedback": ["Attempt 2"]},
+            {"status": "OK", "score": 100, "feedback": []}
+        ]
+        
+        mock_process_ai.return_value = ("New content", ["tag"])
+        mock_generate_md.return_value = "Generated md"
+
+        reconvert_directory(temp_dir, use_llm_validation=False, max_retries=3)
+
+        # Ensure process_with_ai was called 3 times
+        self.assertEqual(mock_process_ai.call_count, 3)
+        
+        # Verify temperatures were escalating (0.0, 0.3, 0.7)
+        calls = mock_process_ai.call_args_list
+        self.assertEqual(calls[0][1]['temperature'], 0.0)
+        self.assertEqual(calls[1][1]['temperature'], 0.3)
+        self.assertEqual(calls[2][1]['temperature'], 0.7)
+
 if __name__ == '__main__':
     unittest.main()
