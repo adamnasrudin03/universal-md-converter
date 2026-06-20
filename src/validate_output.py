@@ -248,6 +248,8 @@ if __name__ == "__main__":
     elif os.path.isdir(target_path):
         for root, dirs, files in os.walk(target_path):
             for file in files:
+                if file.startswith('.'):
+                    continue
                 if file.endswith(".md"):
                     file_path = os.path.join(root, file)
                     print(f"> Memvalidasi {file}...", flush=True)

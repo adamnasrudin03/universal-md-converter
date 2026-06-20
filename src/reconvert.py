@@ -22,46 +22,50 @@ from validate_output import validate_file
 def extract_raw_content(file_path):
     """
     Ekstrak metadata dan teks mentah dari file markdown yang gagal.
-    Format menggunakan YAML frontmatter.
+    Format menggunakan YAML frontmatter secara robust (mengabaikan --- di dalam teks).
     """
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
         
+    # First, securely remove the footer without relying on '---' count
+    footer_text = "*Converted using Universal MD Converter*"
+    if footer_text in content:
+        footer_idx = content.rfind(footer_text)
+        last_sep_idx = content.rfind("---", 0, footer_idx)
+        # If there's a horizontal rule right before the footer, strip it
+        if last_sep_idx != -1 and (footer_idx - last_sep_idx) < 10:
+            content = content[:last_sep_idx].strip()
+        else:
+            content = content[:footer_idx].strip()
+            
     separator = re.compile(r'^\s*---\s*$', re.MULTILINE)
     matches = list(separator.finditer(content))
     
-    if len(matches) >= 3:
-        # matches[0] = start of YAML
-        # matches[1] = end of YAML
-        # matches[-1] = start of footer
-        metadata = content[:matches[1].end()]
-        raw_text = content[matches[1].end():matches[-1].start()].strip()
-        footer = content[matches[-1].start():].strip()
-        return metadata, raw_text, footer
-    elif len(matches) >= 2:
-        # Legacy format fallback with ---
-        first_sep = matches[0]
-        last_sep = matches[-1]
-        metadata = content[:first_sep.start()].rstrip()
-        raw_text = content[first_sep.end():last_sep.start()].strip()
-        footer = content[last_sep.end():].strip()
-        return metadata, raw_text, footer
+    # Check for YAML frontmatter at the start
+    if len(matches) >= 2 and matches[0].start() < 10:
+        yaml_content = content[matches[0].end():matches[1].start()]
+        # It's YAML frontmatter if there's actual text AFTER the second separator OR it contains standard YAML keys
+        after_yaml = content[matches[1].end():].strip()
+        if after_yaml or "source_type" in yaml_content:
+            metadata = content[:matches[1].end()]
+            raw_text = after_yaml
+            return metadata, raw_text, ""
+            
+    # Legacy fallback for --- separators (metadata before first sep, content between first and last sep)
+    if len(matches) >= 2:
+        metadata = content[:matches[0].start()].strip()
+        raw_text = content[matches[0].end():matches[-1].start()].strip()
+        return metadata, raw_text, ""
     else:
-        # Fallback jika struktur tidak standard (e.g. no --- at all)
+        # Fallback jika struktur tidak standard (legacy format)
         m = re.search(r'(\*\*Source Type:\*\*.*?\*\*Converted At:\*\*.*?)\n\n', content, re.DOTALL)
         if m:
             metadata = content[:m.end()].strip()
             raw_text = content[m.end():].strip()
-            if raw_text.endswith("*Converted using Universal MD Converter*"):
-                footer = "*Converted using Universal MD Converter*"
-                raw_text = raw_text[:-len(footer)].strip()
-            else:
-                footer = ""
         else:
             metadata = ""
-            raw_text = content
-            footer = ""
-        return metadata, raw_text, footer
+            raw_text = content.strip()
+        return metadata, raw_text, ""
 
 def process_with_ai(raw_text, model_name='llama3'):
     """
@@ -148,6 +152,8 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
     
     for root, dirs, files in os.walk(directory):
         for file in files:
+            if file.startswith('.'):
+                continue
             if file.endswith(".md"):
                 file_path = os.path.join(root, file)
                 # Cetak progress agar user tau sedang memproses file apa

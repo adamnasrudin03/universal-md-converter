@@ -30,7 +30,7 @@ class TestLinkConverter(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.encoding = 'utf-8'
         mock_response.raise_for_status = MagicMock()
-        mock_response.text = '<html><body><article><p>Hello World</p></article></body></html>'
+        mock_response.content = b'<html><body><article><p>Hello World</p></article></body></html>'
         mock_get.return_value = mock_response
 
         result = convert_link("https://example.com/article")
@@ -69,12 +69,12 @@ class TestLinkConverter(unittest.TestCase):
         mock_response.encoding = 'iso-8859-1'
         mock_response.apparent_encoding = 'utf-8'
         mock_response.raise_for_status = MagicMock()
-        mock_response.text = '<html><body><p>Content</p></body></html>'
+        mock_response.content = b'<html><body><p>Content</p></body></html>'
         mock_get.return_value = mock_response
 
         result = convert_link("https://example.com")
-        # The encoding should be updated (apparent_encoding set)
-        self.assertEqual(mock_response.encoding, 'utf-8')
+        # Beautifulsoup should parse the content successfully regardless of response.encoding
+        self.assertIn("Content", result)
 
     @patch('converters.link_converter.requests.get')
     def test_empty_page_returns_empty_string(self, mock_get):
@@ -85,7 +85,7 @@ class TestLinkConverter(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.encoding = 'utf-8'
         mock_response.raise_for_status = MagicMock()
-        mock_response.text = '<html><body></body></html>'
+        mock_response.content = b'<html><body></body></html>'
         mock_get.return_value = mock_response
 
         result = convert_link("https://example.com/empty")
@@ -101,7 +101,7 @@ class TestLinkConverter(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.encoding = 'utf-8'
         mock_response.raise_for_status = MagicMock()
-        mock_response.text = """<html><body>
+        mock_response.content = b"""<html><body>
             <nav>Navigation menu</nav>
             <main><p>Real content here</p></main>
             <footer>Footer text</footer>

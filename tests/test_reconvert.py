@@ -49,12 +49,33 @@ Some content here.
         self.assertIn("source_type", metadata)
         self.assertIn("source_path", metadata)
         
-        # Raw text should contain the actual content
+        # Raw text should contain the actual content and NOT the footer
         self.assertIn("Core Summary", raw_text)
         self.assertIn("Some content here", raw_text)
+        self.assertNotIn("Universal MD Converter", raw_text)
         
-        # Footer should contain the converter signature
-        self.assertIn("Universal MD Converter", footer)
+        # The footer return is now obsolete / empty string
+        self.assertEqual(footer, "")
+
+    def test_yaml_with_internal_horizontal_rule(self):
+        """Content containing '---' should NOT be chopped."""
+        content = """---
+source_type: "PDF"
+---
+
+# Title
+Some text.
+
+---
+
+More text after rule.
+
+---
+*Converted using Universal MD Converter*
+"""
+        path = self._write_temp(content)
+        metadata, raw_text, footer = extract_raw_content(path)
+        self.assertIn("More text after rule.", raw_text)
 
     def test_legacy_two_separator_format(self):
         """Legacy format with only two separators."""
