@@ -60,6 +60,16 @@ class TestLinkConverter(unittest.TestCase):
         self.assertIn("connect", result.lower())
 
     @patch('converters.link_converter.requests.get')
+    def test_generic_exception_returns_error_prefix(self, mock_get):
+        """A generic exception should return the standard error prefix string."""
+        from converters.link_converter import convert_link
+
+        mock_get.side_effect = Exception("Generic error")
+        result = convert_link("https://example.com")
+        self.assertTrue(result.startswith("Error extracting Web Link:"))
+        self.assertIn("Generic error", result)
+
+    @patch('converters.link_converter.requests.get')
     def test_iso_encoding_fixed(self, mock_get):
         """ISO-8859-1 pages should have encoding corrected via apparent_encoding."""
         from converters.link_converter import convert_link

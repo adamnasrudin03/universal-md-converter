@@ -70,6 +70,16 @@ class TestImageConverter:
         res = convert_image("non_existent_file.png")
         assert "Error extracting Image text" in res
 
+    @patch('src.converters.image_converter.ImageEnhance')
+    @patch('pytesseract.image_to_string')
+    @patch('src.converters.image_converter.Image.open')
+    def test_convert_image_empty_text(self, mock_open, mock_ocr, mock_enhance):
+        mock_img = MagicMock()
+        mock_open.return_value = mock_img
+        mock_ocr.return_value = "   \n\t  "
+        res = convert_image("dummy.png")
+        assert res == ""
+
 # --- media_converter.py ---
 from src.converters.media_converter import convert_media
 
@@ -88,6 +98,17 @@ class TestMediaConverter:
     def test_convert_media_file_not_found(self):
         res = convert_media("non_existent.mp4")
         assert "Error" in res
+
+    @patch('src.converters.media_converter.whisper.load_model')
+    @patch('src.converters.media_converter.os.path.exists')
+    def test_convert_media_empty_text(self, mock_exists, mock_load):
+        mock_exists.return_value = True
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = {"text": "   "}
+        mock_load.return_value = mock_model
+        
+        res = convert_media("dummy.mp4")
+        assert res == ""
 
     @patch('src.converters.media_converter.whisper.load_model')
     @patch('src.converters.media_converter.os.path.exists')

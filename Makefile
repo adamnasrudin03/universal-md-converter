@@ -59,5 +59,5 @@ clean:
 	rm -rf outputs/*/*
 
 test:
-	@echo "=> Menjalankan seluruh unit test..."
-	PYTHONPATH=src ./venv/bin/python -m pytest tests/ -v
+	@echo "=> Menjalankan seluruh unit test beserta pengecekan coverage..."
+	PYTHONPATH=src ./venv/bin/python -m pytest tests/ -v --cov=src --cov-report=term-missing
