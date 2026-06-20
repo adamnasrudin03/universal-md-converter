@@ -19,6 +19,8 @@ REQUIRED_SECTIONS = [
 
 try:
     MIN_SCORE_THRESHOLD = int(os.environ.get("MIN_SCORE", 85))
+    # Clamp to valid scoring range to prevent misconfiguration
+    MIN_SCORE_THRESHOLD = max(0, min(100, MIN_SCORE_THRESHOLD))
 except (ValueError, TypeError):
     MIN_SCORE_THRESHOLD = 85
 

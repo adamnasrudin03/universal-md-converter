@@ -52,7 +52,7 @@ def sanitize_basename(name):
     name = re.sub(r'-+', '-', name).strip('-')
     return name if name else 'untitled'
 
-def process_source(source, outdir, model_name):
+def process_source(source, outdir, model_name, global_used_filenames=None):
     is_url = source.startswith("http://") or source.startswith("https://")
     
     base_title = "doc"
@@ -134,11 +134,23 @@ def process_source(source, outdir, model_name):
     # Ensure output directory exists (safe for programmatic callers)
     os.makedirs(outdir, exist_ok=True)
     
+    # Resolve cross-file filename collisions in batch mode
+    if global_used_filenames is None:
+        global_used_filenames = set()
+    
     for note in atomic_notes:
         filename = note["filename"]
         chunk_content = note["content"]
         raw_chunk_content = note.get("raw_chunk", "")
         tags = note.get("tags", [])
+        
+        # Guard: prevent overwriting a file produced by a prior source in batch mode
+        stem = filename[:-3] if filename.endswith(".md") else filename
+        counter = 1
+        while filename in global_used_filenames:
+            filename = f"{stem}-{counter}.md"
+            counter += 1
+        global_used_filenames.add(filename)
         
         # Format to markdown
         final_markdown = generate_markdown(
@@ -184,13 +196,15 @@ def main():
     
     if not (source.startswith("http://") or source.startswith("https://")) and os.path.isdir(source):
         print(f"Batch Processing Directory: {source}")
+        # Shared set to prevent cross-file filename collisions across the entire batch
+        batch_used_filenames = set()
         for root, _, files in os.walk(source):
             for file in files:
                 ext = os.path.splitext(file)[1].lower()
                 if ext in ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.mp3', '.wav', '.m4a', '.flac', '.mp4', '.avi', '.mkv', '.mov']:
                     file_path = os.path.join(root, file)
                     print(f"\n--- Processing: {file_path} ---")
-                    process_source(file_path, outdir, model_name)
+                    process_source(file_path, outdir, model_name, batch_used_filenames)
     else:
         process_source(source, outdir, model_name)
 

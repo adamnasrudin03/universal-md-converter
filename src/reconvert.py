@@ -258,7 +258,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                         print("  ⚠️ Gagal mencapai status OK setelah batas maksimal retry.")
             else:
                 print("  ❌ Gagal reconvert (LLM return None).")
-                continue
+                break
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mencari file yang gagal divalidasi dan meng-convert ulangnya dengan AI.")
