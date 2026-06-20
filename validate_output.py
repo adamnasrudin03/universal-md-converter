@@ -74,12 +74,12 @@ Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
 
 Format jawaban HANYA berupa JSON valid (tanpa teks lain di luar JSON):
 {{
-  "score": 85,
-  "status": "OK",
+  "score": 0,
+  "status": "NEEDS RECONVERT",
   "feedback": ["alasan 1", "alasan 2"]
 }}
 
-Catatan: "status" harus "OK" jika score >= 80, atau "NEEDS RECONVERT" jika score < 80.
+Catatan: Ganti "score" dengan angka 0-100 hasil evaluasi Anda. "status" harus "OK" jika score >= 80, atau "NEEDS RECONVERT" jika score < 80.
 
 Dokumen untuk dievaluasi:
 {truncated_content}
