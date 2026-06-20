@@ -14,10 +14,7 @@ except ImportError:
     OLLAMA_AVAILABLE = False
 
 REQUIRED_SECTIONS = [
-    r"## 🧠 Core Summary",
-    r"## 💡 Key Concepts & Definitions",
-    r"## 📌 Important Details / Application",
-    r"## 📝 Original Context & Quotes"
+    r"## 🧠 Core Summary"
 ]
 
 MIN_SCORE_THRESHOLD = int(os.environ.get("MIN_SCORE", 85))
@@ -69,7 +66,7 @@ Anda adalah AI Quality Control untuk sistem basis data Retrieval-Augmented Gener
 Tugas Anda adalah mengevaluasi hasil ekstraksi dokumen (markdown) berikut.
 Berikan skor dari 0 hingga 100 berdasarkan kriteria berikut:
 
-1. Struktur (25 poin): Apakah memiliki bagian-bagian inti (Core Summary, Key Concepts, Important Details, Original Context)? Apakah penggunaan Header Dinamis wajar (maksimal 3)? Apakah bagian kosong sudah dihapus?
+1. Struktur (25 poin): Apakah memiliki bagian `Core Summary`? (Ingat: Key Concepts, Important Details, dan Original Context bersifat OPSIONAL dan BOLEH DIHAPUS jika teks tidak relevan). Apakah penggunaan Header Dinamis wajar (maksimal 3)?
 2. Kualitas RAG & Anti-Redundansi (30 poin): Apakah Core Summary kaya kata kunci? Apakah informasi padat dan TIDAK redundan antar bagian? Apakah angka dan fakta dipertahankan akurat?
 3. Formatting & Visualisasi (25 poin): Apakah formatnya rapi (menggunakan Markdown Table jika ada data perbandingan, Numbered List untuk langkah-langkah)? Apakah ada bold untuk kata kunci? Apakah terhindar dari wall-of-text?
 4. Akurasi & Metadata (20 poin): Apakah tag dan slug deskriptif dan spesifik (bukan generik)? Apakah isinya konsisten dan terhindar dari hallucination?

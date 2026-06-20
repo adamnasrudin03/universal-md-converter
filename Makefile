@@ -47,6 +47,13 @@ reconvert-llm:
 	./venv/bin/python reconvert.py "$(DIR)" --llm-validate $$MODEL_ARG
 
 
+sync-path:
+	@if [ -z "$(OLD)" ] || [ -z "$(NEW)" ]; then \
+		echo "ERROR: Harap berikan OLD dan NEW. Contoh: make sync-path OLD='lama.pdf' NEW='baru.pdf'"; \
+		exit 1; \
+	fi
+	./venv/bin/python sync_path.py --old "$(OLD)" --new "$(NEW)" --dir "$(DIR)"
+
 clean:
 	@echo "=> Menghapus seluruh file output..."
 	rm -rf output_notes/* output_notes_ig/* output_notes_web/*

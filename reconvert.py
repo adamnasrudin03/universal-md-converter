@@ -20,39 +20,29 @@ from validate_output import validate_file
 def extract_raw_content(file_path):
     """
     Ekstrak metadata dan teks mentah dari file markdown yang gagal.
-    Format default dari main.py adalah:
-    # [title]
-    
-    **Source Type:** ...
-    **Source Path/URL:** ...
-    **Converted At:** ...
-    
-    ---
-    [raw_content]
-    ---
-    *Converted using Universal MD Converter*
+    Format menggunakan YAML frontmatter.
     """
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
         
-    # Use targeted approach: find the FIRST and LAST `---` separator lines
-    # to correctly isolate header, body, and footer. This avoids breaking
-    # on internal `---` horizontal rules within the RAG content itself.
     separator = re.compile(r'^\s*---\s*$', re.MULTILINE)
     matches = list(separator.finditer(content))
     
-    if len(matches) >= 2:
+    if len(matches) >= 3:
+        # matches[0] = start of YAML
+        # matches[1] = end of YAML
+        # matches[-1] = start of footer
+        metadata = content[:matches[1].end()]
+        raw_text = content[matches[1].end():matches[-1].start()].strip()
+        footer = content[matches[-1].start():].strip()
+        return metadata, raw_text, footer
+    elif len(matches) >= 2:
+        # Legacy format fallback
         first_sep = matches[0]
         last_sep = matches[-1]
         metadata = content[:first_sep.start()].rstrip()
         raw_text = content[first_sep.end():last_sep.start()].strip()
         footer = content[last_sep.end():].strip()
-        return metadata, raw_text, footer
-    elif len(matches) == 1:
-        sep = matches[0]
-        metadata = content[:sep.start()].rstrip()
-        raw_text = content[sep.end():].replace("*Converted using Universal MD Converter*", "").strip()
-        footer = "*Converted using Universal MD Converter*"
         return metadata, raw_text, footer
     else:
         # Fallback jika struktur tidak standard
@@ -112,10 +102,10 @@ def process_with_ai(raw_text, model_name='llama3'):
             rag_content = str(rag_content)
             
         tags_list = parsed_json.get("tags", []) or []
+        valid_tags = []
         
         if tags_list and isinstance(tags_list, list):
             # Filter only valid string tags and sanitize to kebab-case
-            valid_tags = []
             for t in tags_list:
                 if t is not None:
                     t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
@@ -123,14 +113,11 @@ def process_with_ai(raw_text, model_name='llama3'):
                     t_str = re.sub(r'-+', '-', t_str).strip('-')
                     if t_str:
                         valid_tags.append(t_str)
-            if valid_tags:
-                tags_str = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
-                rag_content = tags_str + rag_content
             
-        return rag_content
+        return rag_content, valid_tags
     except Exception as e:
         print(f"Error during AI processing: {str(e)}")
-        return None
+        return None, []
 
 def reconvert_directory(directory, use_llm_validation=False, model_name='llama3', max_retries=2):
     """Mencari file yang gagal validasi dan melakukan reconvert dengan auto-retry."""
@@ -167,6 +154,9 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
     for idx, (file_path, validation_res) in enumerate(files_to_reconvert):
         print(f"\n[{idx+1}/{len(files_to_reconvert)}] Memproses ulang: {os.path.basename(file_path)}")
         
+        # 1. Ekstrak teks asli HANYA pada percobaan pertama
+        metadata, raw_text, footer = extract_raw_content(file_path)
+        
         for attempt in range(max_retries):
             if attempt > 0:
                 print(f"  🔄 Retrying... (Attempt {attempt+1}/{max_retries})")
@@ -175,20 +165,25 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             for fb in validation_res['feedback']:
                 print(f"    - {fb}")
                 
-            # 1. Ekstrak teks asli
-            metadata, raw_text, footer = extract_raw_content(file_path)
-            
             if not raw_text.strip():
                 print("  ❌ Gagal ekstrak raw_text (kosong). Skip.")
                 break
                 
             # 2. Proses ulang menggunakan AI
             print(f"  ⏳ Memanggil Ollama ({model_name}) untuk convert ulang...")
-            new_rag_content = process_with_ai(raw_text, model_name)
+            new_rag_content, new_tags = process_with_ai(raw_text, model_name)
             
             if new_rag_content:
-                # 3. Tulis ulang file
-                new_file_content = f"{metadata}\n\n---\n\n{new_rag_content}\n\n---\n\n{footer}"
+                # 3. Update tags di YAML metadata (jika format YAML)
+                if metadata.startswith("---") and "tags:" in metadata:
+                    tags_yaml = json.dumps(new_tags)
+                    metadata = re.sub(r'^tags:.*$', f'tags: {tags_yaml}', metadata, flags=re.MULTILINE)
+                    
+                # Ekstrak title untuk disisipkan kembali
+                title = os.path.basename(file_path).replace('.md', '')
+                    
+                # 4. Tulis ulang file
+                new_file_content = f"{metadata}\n\n# {title}\n\n{new_rag_content}\n\n{footer}"
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(new_file_content)
                 print("  ✅ Berhasil ditulis. Memvalidasi ulang secara otomatis...")

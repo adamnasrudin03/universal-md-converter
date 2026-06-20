@@ -3,7 +3,7 @@ import os
 import urllib.parse
 import re
 import ollama
-from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link
+from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link, convert_youtube
 from utils.markdown_formatter import generate_markdown
 from utils.chunking import chunk_text_intelligently
 from utils.text_helpers import get_recommended_model
@@ -52,25 +52,7 @@ def sanitize_basename(name):
     name = re.sub(r'-+', '-', name).strip('-')
     return name if name else 'untitled'
 
-def main():
-    parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")
-    parser.add_argument("source", help="Path to the local file or URL to convert")
-    parser.add_argument("-o", "--outdir", help="Output directory to save atomic notes", default="./output_notes")
-    parser.add_argument("-m", "--model", help="Ollama model to use for AI formatting (default: auto)", default="auto")
-    
-    args = parser.parse_args()
-    source = args.source
-    outdir = args.outdir
-    
-    model_name = args.model
-    if model_name == "auto":
-        model_name = get_recommended_model()
-        
-    # Ensure model is downloaded before proceeding
-    ensure_model_installed(model_name)
-    
-    os.makedirs(outdir, exist_ok=True)
-    
+def process_source(source, outdir, model_name):
     is_url = source.startswith("http://") or source.startswith("https://")
     
     base_title = "doc"
@@ -87,6 +69,9 @@ def main():
         if "instagram.com" in parsed_url.netloc:
             source_type = "Instagram Post"
             content = convert_ig_link(source)
+        elif "youtu.be" in parsed_url.netloc or "youtube.com" in parsed_url.netloc:
+            source_type = "YouTube Video"
+            content = convert_youtube(source)
         else:
             source_type = "Web Link"
             content = convert_link(source)
@@ -123,15 +108,14 @@ def main():
     if not content or not content.strip():
         print("Error: No content could be extracted from the source. Aborting.")
         return
-    # Guard: abort if content starts with a known converter error prefix.
-    # These are the EXACT prefixes returned by our converters — specific enough
-    # to avoid false positives when real document content starts with "Error" etc.
+        
     _CONVERTER_ERROR_PREFIXES = (
         "Error extracting PDF:",
         "Error extracting DOCX:",
         "Error extracting Image text:",
         "Error extracting Web Link:",
         "Error extracting Instagram post:",
+        "Error extracting YouTube:",
         "Error transcribing media:",
         "Error: Invalid Instagram URL format.",
         "Failed to extract audio from video.",
@@ -150,13 +134,15 @@ def main():
     for note in atomic_notes:
         filename = note["filename"]
         chunk_content = note["content"]
+        tags = note.get("tags", [])
         
         # Format to markdown
         final_markdown = generate_markdown(
             title=filename.replace('.md', ''), 
             content=chunk_content, 
             source_type=source_type, 
-            source_path_or_url=source
+            source_path_or_url=source,
+            tags=tags
         )
         
         # Write to output directory
@@ -167,6 +153,37 @@ def main():
         print(f"Saved atomic note: {filepath}")
         
     print(f"\nSuccess! Generated {len(atomic_notes)} atomic notes in '{outdir}'")
+
+def main():
+    parser = argparse.ArgumentParser(description="Universal File-to-Markdown Converter (Atomic Notes)")
+    parser.add_argument("source", help="Path to the local file, directory, or URL to convert")
+    parser.add_argument("-o", "--outdir", help="Output directory to save atomic notes", default="./output_notes")
+    parser.add_argument("-m", "--model", help="Ollama model to use for AI formatting (default: auto)", default="auto")
+    
+    args = parser.parse_args()
+    source = args.source
+    outdir = args.outdir
+    
+    model_name = args.model
+    if model_name == "auto":
+        model_name = get_recommended_model()
+        
+    # Ensure model is downloaded before proceeding
+    ensure_model_installed(model_name)
+    
+    os.makedirs(outdir, exist_ok=True)
+    
+    if not (source.startswith("http://") or source.startswith("https://")) and os.path.isdir(source):
+        print(f"Batch Processing Directory: {source}")
+        for root, _, files in os.walk(source):
+            for file in files:
+                ext = os.path.splitext(file)[1].lower()
+                if ext in ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.mp3', '.wav', '.m4a', '.flac', '.mp4', '.avi', '.mkv', '.mov']:
+                    file_path = os.path.join(root, file)
+                    print(f"\n--- Processing: {file_path} ---")
+                    process_source(file_path, outdir, model_name)
+    else:
+        process_source(source, outdir, model_name)
 
 if __name__ == "__main__":
     main()

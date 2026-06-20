@@ -7,6 +7,7 @@ Proyek ini adalah konverter pintar berbasis Python yang mampu mengubah berbagai 
 - **Word** (`.docx`, `.doc`) - Diekstrak menggunakan `python-docx` (mempertahankan heading).
 - **Gambar** (`.png`, `.jpg`, `.jpeg`) - Diekstrak menggunakan Tesseract OCR.
 - **Video & Audio** (`.mp4`, `.mp3`, `.wav`, dll) - Ditranskripsi menjadi teks menggunakan OpenAI Whisper.
+- **YouTube Video** (`youtube.com`, `youtu.be`) - Mengekstrak transkrip dari video YouTube (mendukung banyak bahasa dengan fallback otomatis).
 - **Link Website** (`http/https`) - Diekstrak teks utamanya menggunakan BeautifulSoup dan diubah ke MD.
 - **Link Instagram** (`instagram.com/p/...`) - Mendownload slide *carousel*, mengekstrak teks tiap gambarnya via OCR, dan menggabungkannya dengan *caption*.
 
@@ -54,13 +55,22 @@ Gunakan tanda kutip ganda `""` untuk mengapit URL, terutama jika link mengandung
 # Contoh untuk Instagram:
 python main.py "https://www.instagram.com/p/DZucoBjiQxd/?utm_source=ig_web_button_share_sheet" -o output_notes_ig
 
+# Contoh untuk Video YouTube:
+python main.py "https://www.youtube.com/watch?v=jNQXAC9IVRw" -o output_notes_yt
+
 # Contoh untuk Website Artikel:
 python main.py "https://www.cnbc.com/trading-news/" -o output_notes_web
 ```
 
-### 2. Mengonversi File Dokumen Lokal (PDF/DOCX)
+### 2. Mengonversi File Dokumen Lokal (PDF/DOCX) atau Batch Processing Folder
+Anda dapat memproses satu file atau seluruh isi direktori/folder sekaligus. Script akan mencari semua file yang didukung jika Anda memberikan input folder.
+
 ```bash
+# Satu file
 python main.py "/path/ke/buku_trading.pdf" -o output_notes
+
+# Seluruh direktori (Batch Processing)
+python main.py "/path/ke/folder_dokumen/" -o output_notes
 ```
 
 ### 3. Mengonversi File Media Lokal (Video/Audio)
@@ -77,8 +87,16 @@ python main.py "https://www.cnbc.com/trading-news/" -o output_notes -m qwen2.5:0
 ### Format Output (RAG-Ready Multi-Domain)
 Sistem akan memotong teks Anda (setiap ~600 kata), memprosesnya lewat Ollama (`llama3`/`llama3.2` dengan output streaming), dan menyimpannya di folder `output_notes/` sebagai **Atomic Notes**. Format ini dirancang khusus untuk RAG (Retrieval-Augmented Generation) di berbagai domain (seperti trading, pemrograman, kuliner, dll).
 
-Setiap file akan memiliki nama unik berdasarkan *slug* deskriptif (3-5 kata kebab-case) dan berisi struktur konten berikut:
-- **Tags**: Disanitasi menjadi kebab-case lowercase. Tag pertama menunjukkan domain utama (misal: `#trading`, `#programming`), diikuti oleh tag topik spesifik. Dilarang menggunakan tag generik seperti `#ringkasan` atau `#catatan`.
+Setiap file akan memiliki nama unik berdasarkan *slug* deskriptif (3-5 kata kebab-case) dan berisi struktur konten berikut dengan **YAML Frontmatter**:
+```yaml
+---
+source_type: "YouTube Video"
+source_path: "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+tags: ["biologi", "fauna"]
+converted_at: "2026-06-20 11:35:12"
+---
+```
+- **Tags**: Tersedia di metadata YAML dan disanitasi otomatis.
 - `## 🧠 Core Summary`: Paragraf ringkasan padat (3-5 kalimat) yang kaya kata kunci dan bersifat *self-contained* agar optimal saat diambil via semantic search.
 - `## 💡 Key Concepts & Definitions` (Opsional): Daftar konsep, istilah kunci, atau ide dasar beserta definisi singkatnya dalam format bullet points.
 - `## 📌 Important Details / Application` (Opsional): Rincian teknis, langkah-langkah, data kuantitatif, atau penerapan praktis.
@@ -107,6 +125,9 @@ make run INPUT="/path/ke/buku.pdf"
 
 # Contoh Jika Ingin Memilih Model Spesifik (Override)
 make run INPUT="/path/ke/buku.pdf" MODEL="qwen2.5:0.5b"
+
+# Jika Anda me-rename atau memindahkan file sumber, sinkronkan output Markdown-nya
+make sync-path OLD="path/ke/file_lama.pdf" NEW="path/ke/file_baru.pdf"
 
 # Hapus semua output sebelumnya
 make clean

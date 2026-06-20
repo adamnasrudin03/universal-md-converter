@@ -39,7 +39,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
     for idx, chunk in enumerate(chunks):
         filename = f"{base_name}-part-{idx+1}.md"
         formatted_content = chunk
-        tags = ""
+        final_tags = []
         
         try:
             # Prompt the local LLM
@@ -120,8 +120,7 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
                         if t_str:
                             valid_tags.append(t_str)
                 if valid_tags:
-                    tags = "\n".join([f"#{t}" for t in valid_tags]) + "\n\n"
-                    formatted_content = tags + formatted_content
+                    final_tags = valid_tags
                 
         except Exception as e:
             # Fallback if parsing fails or Ollama is off
@@ -141,7 +140,8 @@ def chunk_text_intelligently(text, base_name, max_words=600, model_name='llama3'
         used_filenames.add(filename)
         atomic_notes.append({
             "filename": filename,
-            "content": formatted_content
+            "content": formatted_content,
+            "tags": final_tags
         })
         
     return atomic_notes
