@@ -46,6 +46,13 @@ reconvert-llm:
 	if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
 	./venv/bin/python src/reconvert.py "$(DIR)" --llm-validate $$MODEL_ARG
 
+force-reconvert:
+	@echo "=> Memaksa reconvert (tanpa validasi) untuk SEMUA file di direktori: $(DIR)"
+	@MODEL_ARG=""; \
+	if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
+	./venv/bin/python src/reconvert.py "$(DIR)" --force $$MODEL_ARG
+
+
 
 sync-path:
 	@if [ -z "$(OLD)" ] || [ -z "$(NEW)" ]; then \

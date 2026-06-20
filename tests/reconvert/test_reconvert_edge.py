@@ -177,3 +177,29 @@ class TestReconvertEdge(unittest.TestCase):
                 
         self.assertEqual(mock_process.call_count, 2)
 
+    @patch('src.reconvert.os.walk')
+    @patch('src.reconvert.validate_file')
+    @patch('src.reconvert.extract_raw_content')
+    @patch('src.reconvert.process_with_ai')
+    @patch('src.reconvert.generate_markdown')
+    def test_reconvert_directory_force(self, mock_gen, mock_process, mock_extract, mock_validate, mock_walk):
+        mock_walk.return_value = [("root", [], ["file.md"])]
+        
+        mock_extract.return_value = ("---source_type: doc---", "raw", "")
+        mock_process.return_value = ("new content", ["tag"])
+        mock_gen.return_value = "new md"
+        
+        # We need mock_validate to pass after retry so the loop breaks
+        mock_validate.return_value = {"status": "OK", "score": 100, "feedback": []}
+        
+        with patch('builtins.open', new_callable=MagicMock):
+            with patch('src.reconvert.os.path.exists', return_value=False):
+                reconvert_directory("test_dir", max_retries=1, force=True)
+                
+        # validate_file should only be called once AFTER processing (the re-validation step), 
+        # but NOT before processing since force skips the initial validation.
+        self.assertEqual(mock_validate.call_count, 1)
+        mock_process.assert_called_once()
+        mock_gen.assert_called_once()
+
+

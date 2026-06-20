@@ -15,6 +15,7 @@ This project is an automated file and web-link converter designed to extract tex
 7. **AI Vibe Coding**: Always maintain a faithful AI coding vibe.
 8. **Testing Requirement**: You must run `make test` to verify changes. Every new feature or enhancement MUST be accompanied by corresponding unit tests.
 9. **Function Splitting**: If a function becomes too long, refactor and split it into separate files based on context.
+10. **Validation & Reconvert**: The project supports heuristic (`make validate`) and LLM-based (`make validate-llm`) quality scoring. If `.md` files have hallucinated or missing content, agents should use `make reconvert-llm` or `make force-reconvert` to automatically load the `.raw.txt` and fix the extraction via Ollama without running the whole pipeline from scratch.
 
 ## Python Environment
 When testing or running the script, ensure you activate the virtual environment `source venv/bin/activate` before executing `python src/main.py`.

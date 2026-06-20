@@ -144,9 +144,11 @@ def process_with_ai(raw_text, model_name='llama3'):
         print(f"Error during AI processing: {str(e)}")
         return None, []
 
-def reconvert_directory(directory, use_llm_validation=False, model_name='llama3', max_retries=2):
-    """Mencari file yang gagal validasi dan melakukan reconvert dengan auto-retry."""
+def reconvert_directory(directory, use_llm_validation=False, model_name='llama3', max_retries=2, force=False):
+    """Mencari file yang gagal validasi dan melakukan reconvert dengan auto-retry. Jika force=True, semua file di direktori akan diproses ulang tanpa validasi."""
     print(f"🔍 Mencari file yang butuh direconvert di {directory}...\n")
+    if force:
+        print("⚡ Mode FORCE aktif: Semua file akan direconvert tanpa proses validasi!")
     
     files_to_reconvert = []
     
@@ -158,6 +160,11 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 file_path = os.path.join(root, file)
                 # Cetak progress agar user tau sedang memproses file apa
                 print(f"  > Mengecek {file} ... ", end="", flush=True)
+                
+                if force:
+                    print("❌ BUTUH RECONVERT (Forced)")
+                    files_to_reconvert.append((file_path, {"status": "NEEDS RECONVERT", "feedback": ["Forced reconvert"], "score": 0}))
+                    continue
                 
                 # Validasi file
                 res = validate_file(file_path, use_llm_validation, model_name)
@@ -180,7 +187,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
         print("✅ Tidak ada file yang butuh di-reconvert. Semuanya OK!")
         return
         
-    print(f"⚠️ Ditemukan {len(files_to_reconvert)} file yang gagal validasi.")
+    print(f"⚠️ Ditemukan {len(files_to_reconvert)} file untuk di-reconvert.")
     
     for idx, (file_path, validation_res) in enumerate(files_to_reconvert):
         print(f"\n[{idx+1}/{len(files_to_reconvert)}] Memproses ulang: {os.path.basename(file_path)}")
@@ -272,6 +279,7 @@ if __name__ == "__main__":
     parser.add_argument("--llm-validate", action="store_true", help="Gunakan mode LLM untuk mencari file yang gagal")
     parser.add_argument("--model", default="auto", help="Model Ollama yang digunakan (default: auto-detect berdasarkan RAM)")
     parser.add_argument("--retries", type=int, default=2, help="Jumlah maksimal percobaan reconvert jika masih gagal (default: 2)")
+    parser.add_argument("--force", action="store_true", help="Lewati proses validasi dan proses ulang semua file di direktori")
     
     args = parser.parse_args()
     
@@ -282,4 +290,4 @@ if __name__ == "__main__":
     if model == "auto":
         model = get_recommended_model()
 
-    reconvert_directory(args.path, args.llm_validate, model, args.retries)
+    reconvert_directory(args.path, args.llm_validate, model, args.retries, args.force)

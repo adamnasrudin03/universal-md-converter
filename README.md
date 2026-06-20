@@ -172,13 +172,21 @@ make validate-llm DIR="outputs/notes_ig/"
 ```
 
 ## 🔄 Reconvert Otomatis
-Jika proses validasi di atas menemukan file dengan status **NEEDS RECONVERT**, Anda bisa memproses ulang file tersebut secara otomatis. Sistem akan mengekstrak kembali teks aslinya dan memanggil ulang Ollama untuk memperbaiki formatnya. Sistem juga dilengkapi dengan fitur **auto-retry**, di mana file akan divalidasi ulang setelah proses reconvert dan jika masih gagal, akan diulang kembali (maksimal 2 kali percobaan).
-
+Jika proses validasi di atas menemukan file dengan status **NEEDS RECONVERT**, Anda bisa memproses ulang file tersebut secara otomatis. Sistem akan mengekstrak kembali teks aslinya (dari file `.raw.txt`) dan memanggil ulang Ollama untuk memperbaiki formatnya tanpa harus mengekstrak dokumen sumber dari awal. Sistem juga dilengkapi dengan fitur **auto-retry**, di mana file akan divalidasi ulang setelah proses reconvert dan jika masih gagal, akan diulang kembali (maksimal 2 kali percobaan).
 
 ```bash
 # Mereconvert file yang gagal berdasarkan validasi cepat (Heuristic)
 make reconvert
 
-# Mereconvert file yang gagal berdasarkan validasi LLM
+# Mereconvert file yang gagal berdasarkan validasi LLM (Lebih direkomendasikan)
 make reconvert-llm
+
+# Memaksa reconvert SEMUA file di dalam direktori tanpa melalui proses validasi
+make force-reconvert DIR="outputs/notes/folder_anda/"
+```
+
+**💡 Tips Kustomisasi Validasi:**
+Secara default, file yang mendapatkan skor di bawah 85 akan di-reconvert. Anda dapat memperketat seleksi ini dengan mengubah variabel lingkungan `MIN_SCORE`. Misalnya, jika Anda ingin memproses ulang semua file yang nilainya tidak sempurna (100):
+```bash
+MIN_SCORE=100 make reconvert-llm DIR="outputs/notes/folder_anda/"
 ```
