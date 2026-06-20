@@ -176,13 +176,13 @@ Some raw content here.
 
     @patch('reconvert.process_with_ai')
     @patch('reconvert.validate_file')
-    def test_none_result_breaks_retry_loop(self, mock_validate, mock_process_ai):
-        """When process_with_ai returns (None, []), retry loop must break immediately
-        and NOT call process_with_ai again for the remaining retries."""
+    def test_none_result_continues_retry_loop(self, mock_validate, mock_process_ai):
+        """When process_with_ai returns (None, []), retry loop must continue
+        and call process_with_ai again for the remaining retries."""
         from reconvert import reconvert_directory
-
+    
         self._create_md_file("test-file-part-1.md")
-        # First call: needs reconvert, subsequent calls: ok (shouldn't be reached after break)
+        # All calls need reconvert
         mock_validate.return_value = {
             'status': 'NEEDS RECONVERT',
             'score': 30,
@@ -190,12 +190,12 @@ Some raw content here.
         }
         # process_with_ai always returns None
         mock_process_ai.return_value = (None, [])
-
+    
         reconvert_directory(self.test_dir, use_llm_validation=False, model_name='llama3', max_retries=3)
-
-        # process_with_ai should be called exactly ONCE (break on first None)
-        self.assertEqual(mock_process_ai.call_count, 1,
-                         "process_with_ai should only be called once when it returns None (loop must break, not continue)")
+    
+        # process_with_ai should be called 3 times (loop must continue on None)
+        self.assertEqual(mock_process_ai.call_count, 3,
+                         "process_with_ai should be called multiple times when it returns None (loop must continue)")
 
     @patch('reconvert.process_with_ai')
     @patch('reconvert.validate_file')

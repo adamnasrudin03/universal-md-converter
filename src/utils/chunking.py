@@ -163,6 +163,11 @@ def process_chunk_with_ai(chunk, chunk_index, total_chunks, global_context_block
         if isinstance(rag_content, dict): # pragma: no cover
             rag_parts = []
             for k, v in rag_content.items():
+                if k.strip().lower() == "core summary":
+                    k = "🧠 Core Summary"
+                if not k.startswith("#"):
+                    k = f"## {k}"
+                    
                 if isinstance(v, str):
                     rag_parts.append(f"{k}\n{v}")
                 else:

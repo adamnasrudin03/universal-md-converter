@@ -145,5 +145,117 @@ Some broken text
         self.assertEqual(calls[1][1]['temperature'], 0.3)
         self.assertEqual(calls[2][1]['temperature'], 0.7)
 
+    def test_extract_raw_content_horizontal_rules(self):
+        """Bug Fix: Ensure markdown with horizontal rules but no metadata is not destroyed."""
+        content = """Title of the page
+
+Some intro text here.
+
+---
+
+Main content in between.
+
+---
+
+Conclusion text here."""
+        path = self._write_temp(content)
+        metadata, raw_text, footer = extract_raw_content(path)
+        
+        # Metadata should be empty because there's no source_type, and raw_text should be the whole content.
+        self.assertEqual(metadata, "")
+        self.assertEqual(raw_text, content.strip())
+
+    @patch('reconvert.generate_markdown')
+    @patch('reconvert.process_with_ai')
+    @patch('reconvert.validate_file')
+    @patch('reconvert.save_validation_report')
+    def test_metadata_regex_single_quotes(self, mock_save_report, mock_validate, mock_process_ai, mock_generate_md):
+        """Bug Fix: Ensure YAML frontmatter with single quotes is parsed properly."""
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: [os.unlink(os.path.join(temp_dir, f)) for f in os.listdir(temp_dir)] + [os.rmdir(temp_dir)])
+        
+        file_path = os.path.join(temp_dir, "test.md")
+        content = """---
+source_type: 'PDF Document'
+source_path: 'local/path/to/file.pdf'
+---
+Text content
+"""
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+            
+        mock_validate.side_effect = [
+            {"status": "NEEDS RECONVERT", "score": 50, "feedback": ["Bad"]},
+            {"status": "OK", "score": 100, "feedback": []}
+        ]
+        mock_process_ai.return_value = ("New content", ["tag1"])
+        mock_generate_md.return_value = "Generated md"
+
+        reconvert_directory(temp_dir, use_llm_validation=False, max_retries=1)
+
+        # Check what was passed to generate_markdown
+        mock_generate_md.assert_called_once()
+        kwargs = mock_generate_md.call_args[1]
+        
+        # Single quotes should be stripped
+        self.assertEqual(kwargs['source_type'], "PDF Document")
+        self.assertEqual(kwargs['source_path_or_url'], "local/path/to/file.pdf")
+
+    @patch('ollama.chat')
+    @patch('reconvert.extract_global_context')
+    def test_process_with_ai_formats_nested_dict_headers(self, mock_extract_global, mock_chat):
+        """Bug Fix: Ensure nested dicts from LLM get proper Markdown headers, especially for Core Summary."""
+        mock_extract_global.return_value = ""
+        
+        # Mock LLM returning a nested dict instead of markdown
+        nested_json = {
+            "rag_content": {
+                "Core Summary": "This is a summary",
+                "Key Concepts": "These are concepts"
+            },
+            "tags": []
+        }
+        mock_response = [
+            MagicMock(message=MagicMock(content=json.dumps(nested_json)))
+        ]
+        mock_chat.return_value = mock_response
+
+        rag_content, tags = process_with_ai("raw text here", model_name="dummy")
+        
+        # Ensure it prefixed with ## and the emoji for Core Summary
+        self.assertIn("## 🧠 Core Summary\nThis is a summary", rag_content)
+        self.assertIn("## Key Concepts\nThese are concepts", rag_content)
+
+    @patch('reconvert.generate_markdown')
+    @patch('reconvert.process_with_ai')
+    @patch('reconvert.validate_file')
+    @patch('reconvert.save_validation_report')
+    def test_reconvert_directory_continues_on_none_llm_response(self, mock_save_report, mock_validate, mock_process_ai, mock_generate_md):
+        """Bug Fix: Ensure a None return from LLM doesn't break the retry loop."""
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: [os.unlink(os.path.join(temp_dir, f)) for f in os.listdir(temp_dir)] + [os.rmdir(temp_dir)])
+        
+        file_path = os.path.join(temp_dir, "test_none.md")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("Some text\n")
+            
+        mock_validate.side_effect = [
+            {"status": "NEEDS RECONVERT", "score": 40, "feedback": ["Bad"]},
+            {"status": "OK", "score": 100, "feedback": []}
+        ]
+        
+        # First attempt: LLM fails (returns None). Second attempt: LLM succeeds.
+        mock_process_ai.side_effect = [
+            (None, []),
+            ("Valid Content", ["tag"])
+        ]
+        mock_generate_md.return_value = "Generated md"
+
+        reconvert_directory(temp_dir, use_llm_validation=False, max_retries=2)
+
+        # Ensure process_with_ai was called 2 times (retry loop didn't break early)
+        self.assertEqual(mock_process_ai.call_count, 2)
+        mock_generate_md.assert_called_once()
+
 if __name__ == '__main__':
     unittest.main()

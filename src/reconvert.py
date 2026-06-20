@@ -58,17 +58,17 @@ def extract_raw_content(file_path):
         # Ensure we don't accidentally swallow the whole file if it was actually just frontmatter
         if metadata == "" and "source_type" in raw_text:
             return content, "", ""
-        return metadata, raw_text, ""
+        if "**source type:**" in metadata.lower() or "source_type" in metadata.lower():
+            return metadata, raw_text, ""
+    # Fallback jika struktur tidak standard (legacy format)
+    m = re.search(r'(\*\*Source Type:\*\*.*?\*\*Converted At:\*\*.*?)\n\n', content, re.DOTALL)
+    if m:
+        metadata = content[:m.end()].strip()
+        raw_text = content[m.end():].strip()
     else:
-        # Fallback jika struktur tidak standard (legacy format)
-        m = re.search(r'(\*\*Source Type:\*\*.*?\*\*Converted At:\*\*.*?)\n\n', content, re.DOTALL)
-        if m:
-            metadata = content[:m.end()].strip()
-            raw_text = content[m.end():].strip()
-        else:
-            metadata = ""
-            raw_text = content.strip()
-        return metadata, raw_text, ""
+        metadata = ""
+        raw_text = content.strip()
+    return metadata, raw_text, ""
 
 def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
     """
@@ -121,10 +121,17 @@ def process_with_ai(raw_text, model_name='llama3', temperature=0.0):
         # Extract content (guard against null from LLM)
         rag_content = parsed_json.get("rag_content", "") or ""
         
-        # If the LLM returned a nested dict instead of a markdown string, convert it
         if isinstance(rag_content, dict):
             rag_parts = []
             for k, v in rag_content.items():
+                # Ensure Core Summary has the emoji if the LLM missed it
+                if k.strip().lower() == "core summary":
+                    k = "🧠 Core Summary"
+                
+                # Ensure it has the ## header prefix
+                if not k.startswith("#"):
+                    k = f"## {k}"
+                    
                 if isinstance(v, str):
                     rag_parts.append(f"{k}\n{v}")
                 else: # pragma: no cover
@@ -265,9 +272,9 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                 source_type = "Unknown"
                 source_path = "Unknown"
                 if metadata.startswith("---"):
-                    m_type = re.search(r'source_type:\s*"?([^"\n]+?)"?(?=\n|$)', metadata)
+                    m_type = re.search(r'source_type:\s*[\'"]?([^\'"\n]+?)[\'"]?(?=\n|$)', metadata)
                     if m_type: source_type = m_type.group(1).strip()
-                    m_path = re.search(r'source_path:\s*"?([^"\n]+?)"?(?=\n|$)', metadata)
+                    m_path = re.search(r'source_path:\s*[\'"]?([^\'"\n]+?)[\'"]?(?=\n|$)', metadata)
                     if m_path: source_path = m_path.group(1).strip()
                 else:
                     m_type = re.search(r'\*\*Source Type:\*\*\s*(.*)', metadata)
@@ -305,7 +312,7 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
                         print("  ⚠️ Gagal mencapai status OK setelah batas maksimal retry.")
             else:
                 print("  ❌ Gagal reconvert (LLM return None).")
-                break
+                continue
         
         # Explicitly collect garbage after finishing one file to free up memory
         import gc
