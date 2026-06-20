@@ -10,9 +10,7 @@ ENV/
 .venv/
 
 # Output directories
-output_notes/
-output_notes_ig/
-output_notes_web/
+outputs/
 
 # Temporary directories and files
 temp_ig_*/

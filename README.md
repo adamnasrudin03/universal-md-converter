@@ -53,13 +53,13 @@ Gunakan tanda kutip ganda `""` untuk mengapit URL, terutama jika link mengandung
 
 ```bash
 # Contoh untuk Instagram:
-python main.py "https://www.instagram.com/p/DZucoBjiQxd/?utm_source=ig_web_button_share_sheet" -o output_notes_ig
+python src/main.py "https://www.instagram.com/p/DZucoBjiQxd/?utm_source=ig_web_button_share_sheet" -o outputs/notes_ig
 
 # Contoh untuk Video YouTube:
-python main.py "https://www.youtube.com/watch?v=jNQXAC9IVRw" -o output_notes_yt
+python src/main.py "https://www.youtube.com/watch?v=jNQXAC9IVRw" -o outputs/notes_yt
 
 # Contoh untuk Website Artikel:
-python main.py "https://www.cnbc.com/trading-news/" -o output_notes_web
+python src/main.py "https://www.cnbc.com/trading-news/" -o outputs/notes_web
 ```
 
 ### 2. Mengonversi File Dokumen Lokal (PDF/DOCX) atau Batch Processing Folder
@@ -67,25 +67,25 @@ Anda dapat memproses satu file atau seluruh isi direktori/folder sekaligus. Scri
 
 ```bash
 # Satu file
-python main.py "/path/ke/buku_trading.pdf" -o output_notes
+python src/main.py "/path/ke/buku_trading.pdf" -o outputs/notes
 
 # Seluruh direktori (Batch Processing)
-python main.py "/path/ke/folder_dokumen/" -o output_notes
+python src/main.py "/path/ke/folder_dokumen/" -o outputs/notes
 ```
 
 ### 3. Mengonversi File Media Lokal (Video/Audio)
 ```bash
-python main.py "/path/ke/rekaman_webinar.mp4" -o output_notes
+python src/main.py "/path/ke/rekaman_webinar.mp4" -o outputs/notes
 ```
 
 ### 4. Mengubah Model AI Secara Manual (Override)
 Jika Anda tidak ingin menggunakan model auto-deteksi, Anda bisa memaksakan (override) penggunaan model tertentu menggunakan parameter `-m` atau `--model`.
 ```bash
-python main.py "https://www.cnbc.com/trading-news/" -o output_notes -m qwen2.5:0.5b
+python src/main.py "https://www.cnbc.com/trading-news/" -o outputs/notes -m qwen2.5:0.5b
 ```
 
 ### Format Output (RAG-Ready Multi-Domain)
-Sistem akan memotong teks Anda (setiap ~600 kata), memprosesnya lewat Ollama (`llama3`/`llama3.2` dengan output streaming), dan menyimpannya di folder `output_notes/` sebagai **Atomic Notes**. Format ini dirancang khusus untuk RAG (Retrieval-Augmented Generation) di berbagai domain (seperti trading, pemrograman, kuliner, dll).
+Sistem akan memotong teks Anda (setiap ~600 kata), memprosesnya lewat Ollama (`llama3`/`llama3.2` dengan output streaming), dan menyimpannya di folder `outputs/notes/` sebagai **Atomic Notes**. Format ini dirancang khusus untuk RAG (Retrieval-Augmented Generation) di berbagai domain (seperti trading, pemrograman, kuliner, dll).
 
 Setiap file akan memiliki nama unik berdasarkan *slug* deskriptif (3-5 kata kebab-case) dan berisi struktur konten berikut dengan **YAML Frontmatter**:
 ```yaml
@@ -139,11 +139,11 @@ Sistem ini dilengkapi dengan `validate_output.py` untuk menilai apakah hasil eks
 **1. Validasi Cepat (Heuristic/Regex):**
 Mengecek keberadaan judul/heading wajib, jumlah kata minimum, dan kesesuaian tag. Sangat cepat.
 ```bash
-# Menggunakan Makefile (default ke output_notes/)
+# Menggunakan Makefile (default ke outputs/notes/)
 make validate
 
 # Spesifik direktori
-make validate DIR="output_notes_ig/"
+make validate DIR="outputs/notes_ig/"
 ```
 
 **2. Validasi Mendalam (Ollama LLM):**
@@ -153,11 +153,11 @@ Menggunakan model AI lokal untuk menilai kualitas tulisan secara mendalam dengan
 - **Formatting & Visualisasi (25 poin)**: Penggunaan *Markdown Table* untuk data statistik, *Numbered/Bullet List*, *bold* untuk kata kunci, dan menghindari *wall-of-text*.
 - **Akurasi & Metadata (20 poin)**: Konsistensi faktual (menghindari halusinasi) serta keunikan slug/tag.
 ```bash
-# Menggunakan Makefile (default ke output_notes/)
+# Menggunakan Makefile (default ke outputs/notes/)
 make validate-llm
 
 # Spesifik direktori
-make validate-llm DIR="output_notes_ig/"
+make validate-llm DIR="outputs/notes_ig/"
 ```
 
 ## 🔄 Reconvert Otomatis

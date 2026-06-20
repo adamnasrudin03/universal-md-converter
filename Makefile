@@ -1,7 +1,7 @@
 .PHONY: setup run validate validate-llm reconvert reconvert-llm clean
 
 # Default directory for validation if not specified
-DIR ?= output_notes/
+DIR ?= outputs/notes/
 
 setup:
 	@echo "=> Membuat virtual environment dan menginstal requirements..."
@@ -15,36 +15,36 @@ run:
 	if [ -n "$(MODEL)" ]; then MODEL_ARG="-m $(MODEL)"; fi; \
 	if echo "$(INPUT)" | grep -q "instagram.com"; then \
 		echo "=> Memproses link Instagram..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes_ig $$MODEL_ARG; \
+		./venv/bin/python src/main.py "$(INPUT)" -o outputs/notes_ig $$MODEL_ARG; \
 	elif echo "$(INPUT)" | grep -q "^http"; then \
 		echo "=> Memproses link Website..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes_web $$MODEL_ARG; \
+		./venv/bin/python src/main.py "$(INPUT)" -o outputs/notes_web $$MODEL_ARG; \
 	else \
 		echo "=> Memproses file lokal..."; \
-		./venv/bin/python main.py "$(INPUT)" -o output_notes $$MODEL_ARG; \
+		./venv/bin/python src/main.py "$(INPUT)" -o outputs/notes $$MODEL_ARG; \
 	fi
 
 validate:
 	@echo "=> Menjalankan validasi Heuristic (Cepat) pada direktori: $(DIR)"
-	./venv/bin/python validate_output.py "$(DIR)"
+	./venv/bin/python src/validate_output.py "$(DIR)"
 
 validate-llm:
 	@echo "=> Menjalankan validasi LLM (Mendalam) pada direktori: $(DIR)"
 	@MODEL_ARG=""; \
 	if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
-	./venv/bin/python validate_output.py "$(DIR)" --llm $$MODEL_ARG
+	./venv/bin/python src/validate_output.py "$(DIR)" --llm $$MODEL_ARG
 
 reconvert:
 	@echo "=> Mencari dan mereconvert file yang gagal (Heuristic) di direktori: $(DIR)"
 	@MODEL_ARG=""; \
 	if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
-	./venv/bin/python reconvert.py "$(DIR)" $$MODEL_ARG
+	./venv/bin/python src/reconvert.py "$(DIR)" $$MODEL_ARG
 
 reconvert-llm:
 	@echo "=> Mencari dan mereconvert file yang gagal (LLM) di direktori: $(DIR)"
 	@MODEL_ARG=""; \
 	if [ -n "$(MODEL)" ]; then MODEL_ARG="--model $(MODEL)"; fi; \
-	./venv/bin/python reconvert.py "$(DIR)" --llm-validate $$MODEL_ARG
+	./venv/bin/python src/reconvert.py "$(DIR)" --llm-validate $$MODEL_ARG
 
 
 sync-path:
@@ -52,8 +52,8 @@ sync-path:
 		echo "ERROR: Harap berikan OLD dan NEW. Contoh: make sync-path OLD='lama.pdf' NEW='baru.pdf'"; \
 		exit 1; \
 	fi
-	./venv/bin/python sync_path.py --old "$(OLD)" --new "$(NEW)" --dir "$(DIR)"
+	./venv/bin/python src/sync_path.py --old "$(OLD)" --new "$(NEW)" --dir "$(DIR)"
 
 clean:
 	@echo "=> Menghapus seluruh file output..."
-	rm -rf output_notes/* output_notes_ig/* output_notes_web/*
+	rm -rf outputs/*/*
