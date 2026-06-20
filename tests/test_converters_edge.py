@@ -305,6 +305,36 @@ class TestPdfConverter:
         res = convert_pdf("non_existent.pdf")
         assert "Error extracting PDF" in res
 
+    @patch('src.converters.pdf_converter.pdfplumber.open')
+    def test_convert_pdf_long_text_skips_ocr(self, mock_open):
+        mock_pdf = MagicMock()
+        mock_page = MagicMock()
+        # Text is > 50 characters, should skip OCR entirely
+        mock_page.extract_text.return_value = "This is a very long text that is definitely more than fifty characters long to bypass the OCR fallback check."
+        mock_pdf.pages = [mock_page]
+        mock_open.return_value.__enter__.return_value = mock_pdf
+        
+        res = convert_pdf("dummy.pdf")
+        assert "This is a very long text" in res
+
+    @patch('PIL.ImageEnhance')
+    @patch('pytesseract.image_to_string')
+    @patch('src.converters.pdf_converter.pdfplumber.open')
+    def test_convert_pdf_ocr_shorter_than_text(self, mock_open, mock_ocr, mock_enhance):
+        mock_pdf = MagicMock()
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = "Short text" # < 50 chars, triggers OCR
+        
+        mock_img_obj = MagicMock()
+        mock_page.to_image.return_value.original = mock_img_obj
+        mock_pdf.pages = [mock_page]
+        mock_open.return_value.__enter__.return_value = mock_pdf
+        
+        mock_ocr.return_value = "OCR" # Shorter than "Short text"
+        
+        res = convert_pdf("dummy.pdf")
+        assert "Short text" in res # Should keep original text
+
 # --- youtube_converter.py ---
 from src.converters.youtube_converter import convert_youtube
 

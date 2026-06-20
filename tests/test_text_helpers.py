@@ -63,6 +63,16 @@ class TestSafeTruncate(unittest.TestCase):
         """Edge case: max_chars=0 should return empty."""
         self.assertEqual(safe_truncate("hello", 0), "")
 
+    def test_clean_raw_text_empty(self):
+        from utils.text_helpers import clean_raw_text
+        self.assertEqual(clean_raw_text(""), "")
+        self.assertEqual(clean_raw_text(None), None)
+
+    def test_clean_raw_text_cleaning(self):
+        from utils.text_helpers import clean_raw_text
+        raw = "  Line 1   \t\n\n\n\n  Line 2  "
+        self.assertEqual(clean_raw_text(raw), "Line 1\n\nLine 2")
+
 from unittest.mock import patch, MagicMock, mock_open
 from src.utils.text_helpers import get_recommended_model
 
@@ -114,6 +124,17 @@ class TestGetRecommendedModel(unittest.TestCase):
         with patch("builtins.open", mock_open(read_data="MemTotal:       8388608 kB\n")) as mock_file:
             model = get_recommended_model()
             self.assertEqual(model, "llama3.2")
+
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_windows(self, mock_system):
+        mock_system.return_value = "Windows"
+        self.assertEqual(get_recommended_model(), "llama3.2")
+
+    @patch('src.utils.text_helpers.platform.system')
+    def test_get_recommended_model_linux_no_memtotal(self, mock_system):
+        mock_system.return_value = "Linux"
+        with patch("builtins.open", mock_open(read_data="OtherInfo: 123 kB\nAnotherInfo: 456 kB\n")) as mock_file:
+            self.assertEqual(get_recommended_model(), "llama3.2")
 
 if __name__ == '__main__':
     unittest.main()
