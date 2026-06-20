@@ -20,14 +20,16 @@ def convert_ig_link(url):
                 shortcode = path_parts[idx + 1]
             else:
                 return "Error: Invalid Instagram URL format. Missing shortcode after /p/."
-        elif 'reel' in path_parts:
-            idx = path_parts.index('reel')
+        elif 'reel' in path_parts or 'reels' in path_parts:
+            # Handle both /reel/ and /reels/
+            key = 'reel' if 'reel' in path_parts else 'reels'
+            idx = path_parts.index(key)
             if idx + 1 < len(path_parts):
                 shortcode = path_parts[idx + 1]
             else:
-                return "Error: Invalid Instagram URL format. Missing shortcode after /reel/."
+                return f"Error: Invalid Instagram URL format. Missing shortcode after /{key}/."
         else:
-            return "Error: Invalid Instagram URL format. Make sure it's a /p/ or /reel/ link."
+            return "Error: Invalid Instagram URL format. Make sure it's a /p/, /reel/, or /reels/ link."
             
         L = instaloader.Instaloader()
         

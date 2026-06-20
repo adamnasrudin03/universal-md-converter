@@ -22,8 +22,9 @@ def extract_shortcode(url):
         if idx + 1 < len(path_parts):
             return path_parts[idx + 1]
         return None  # Missing shortcode
-    elif 'reel' in path_parts:
-        idx = path_parts.index('reel')
+    elif 'reel' in path_parts or 'reels' in path_parts:
+        key = 'reel' if 'reel' in path_parts else 'reels'
+        idx = path_parts.index(key)
         if idx + 1 < len(path_parts):
             return path_parts[idx + 1]
         return None  # Missing shortcode
@@ -38,6 +39,10 @@ class TestInstagramShortcodeExtraction(unittest.TestCase):
 
     def test_reel_url(self):
         url = "https://www.instagram.com/reel/ABC123def/"
+        self.assertEqual(extract_shortcode(url), "ABC123def")
+
+    def test_reels_url(self):
+        url = "https://www.instagram.com/reels/ABC123def/"
         self.assertEqual(extract_shortcode(url), "ABC123def")
 
     def test_post_without_trailing_slash(self):

@@ -22,9 +22,12 @@ def extract_video_id(url):
     if "youtu.be" in parsed_url.netloc:
         video_id = parsed_url.path.strip('/')
     elif "youtube.com" in parsed_url.netloc:
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-        if "v" in query_params:
-            video_id = query_params["v"][0]
+        if parsed_url.path.startswith("/shorts/"):
+            video_id = parsed_url.path.split("/shorts/")[1].split("/")[0]
+        else:
+            query_params = urllib.parse.parse_qs(parsed_url.query)
+            if "v" in query_params:
+                video_id = query_params["v"][0]
     
     return video_id
 
@@ -38,6 +41,14 @@ class TestYoutubeVideoIdExtraction(unittest.TestCase):
     def test_short_youtu_be_url(self):
         url = "https://youtu.be/dQw4w9WgXcQ"
         self.assertEqual(extract_video_id(url), "dQw4w9WgXcQ")
+
+    def test_shorts_youtube_url(self):
+        url = "https://www.youtube.com/shorts/xyz123"
+        self.assertEqual(extract_video_id(url), "xyz123")
+
+    def test_shorts_youtube_url_with_query(self):
+        url = "https://www.youtube.com/shorts/xyz123?feature=share"
+        self.assertEqual(extract_video_id(url), "xyz123")
 
     def test_youtube_url_with_extra_params(self):
         url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s&list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf"

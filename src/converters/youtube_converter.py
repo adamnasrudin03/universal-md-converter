@@ -15,9 +15,13 @@ def convert_youtube(url):
         if "youtu.be" in parsed_url.netloc:
             video_id = parsed_url.path.strip('/')
         elif "youtube.com" in parsed_url.netloc:
-            query_params = urllib.parse.parse_qs(parsed_url.query)
-            if "v" in query_params:
-                video_id = query_params["v"][0]
+            if parsed_url.path.startswith("/shorts/"):
+                # Handle youtube.com/shorts/VIDEO_ID
+                video_id = parsed_url.path.split("/shorts/")[1].split("/")[0]
+            else:
+                query_params = urllib.parse.parse_qs(parsed_url.query)
+                if "v" in query_params:
+                    video_id = query_params["v"][0]
                 
         if not video_id:
             return "Error extracting YouTube: Invalid URL format, could not find video ID."

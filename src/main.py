@@ -200,6 +200,8 @@ def main():
         batch_used_filenames = set()
         for root, _, files in os.walk(source):
             for file in files:
+                if file.startswith('.'):
+                    continue
                 ext = os.path.splitext(file)[1].lower()
                 if ext in ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.mp3', '.wav', '.m4a', '.flac', '.mp4', '.avi', '.mkv', '.mov']:
                     file_path = os.path.join(root, file)
