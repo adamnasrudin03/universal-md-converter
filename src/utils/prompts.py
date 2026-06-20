@@ -94,7 +94,7 @@ Output JSON Ideal:
 {
   "filename_slug": "laporan-keuangan-q3-2023",
   "tags": ["bisnis", "laporan-keuangan", "q3-2023"],
-  "rag_content": "## 🧠 Core Summary\nPada kuartal ketiga (Q3) 2023, perusahaan mencatat peningkatan pendapatan sebesar 15% hingga mencapai Rp 2,5 Triliun, didorong oleh pertumbuhan pengguna aktif harian (DAU) sebanyak 1.2 juta pengguna.\n\n## 📌 Important Details / Application\n* **Pendapatan:** Naik 15% menjadi Rp 2,5 Triliun.\n* **DAU:** 1.2 juta pengguna aktif harian.\n\n## 📝 Original Context & Quotes\n> 'Ini adalah kuartal terbaik kami' — CEO"
+  "rag_content": "## 🧠 Core Summary\\nPada kuartal ketiga (Q3) 2023, perusahaan mencatat peningkatan pendapatan sebesar 15% hingga mencapai Rp 2,5 Triliun, didorong oleh pertumbuhan pengguna aktif harian (DAU) sebanyak 1.2 juta pengguna.\\n\\n## 📌 Important Details / Application\\n* **Pendapatan:** Naik 15% menjadi Rp 2,5 Triliun.\\n* **DAU:** 1.2 juta pengguna aktif harian.\\n\\n## 📝 Original Context & Quotes\\n> 'Ini adalah kuartal terbaik kami' — CEO"
 }
 
 ═══════════════════════════════════════════
