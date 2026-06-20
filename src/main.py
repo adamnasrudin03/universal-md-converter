@@ -6,7 +6,7 @@ import ollama
 from converters import convert_pdf, convert_docx, convert_image, convert_media, convert_link, convert_ig_link, convert_youtube
 from utils.markdown_formatter import generate_markdown
 from utils.chunking import chunk_text_intelligently
-from utils.text_helpers import get_recommended_model
+from utils.text_helpers import get_recommended_model, clean_raw_text
 
 
 
@@ -123,6 +123,9 @@ def process_source(source, outdir, model_name, global_used_filenames=None):
     if content.startswith(_CONVERTER_ERROR_PREFIXES):
         print(f"Converter returned an error: {content}")
         return
+        
+    # Clean raw text to optimize tokens and improve LLM output
+    content = clean_raw_text(content)
         
     print("Splitting text into Atomic Notes intelligently...")
     atomic_notes = chunk_text_intelligently(content, base_title, max_words=600, model_name=model_name)

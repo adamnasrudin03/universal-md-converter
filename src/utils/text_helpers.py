@@ -1,6 +1,23 @@
 import platform
 import subprocess
+import re
 
+def clean_raw_text(text):
+    """
+    Cleans raw text by removing excessive whitespace, tabs, and newlines.
+    This saves LLM context window tokens and improves output formatting.
+    """
+    if not text:
+        return text
+    # Replace 3 or more consecutive newlines with exactly 2 newlines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # Replace multiple spaces/tabs with a single space
+    text = re.sub(r'[ \t]+', ' ', text)
+    # Clean spaces at the start and end of each line
+    text = '\n'.join(line.strip() for line in text.split('\n'))
+    # One more pass for newlines because stripping lines might have created empty lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 def safe_truncate(text, max_chars):
     """Truncate text to max_chars without breaking mid-word.
