@@ -55,6 +55,9 @@ def extract_raw_content(file_path):
     if len(matches) >= 2:
         metadata = content[:matches[0].start()].strip()
         raw_text = content[matches[0].end():matches[-1].start()].strip()
+        # Ensure we don't accidentally swallow the whole file if it was actually just frontmatter
+        if metadata == "" and "source_type" in raw_text:
+            return content, "", ""
         return metadata, raw_text, ""
     else:
         # Fallback jika struktur tidak standard (legacy format)
@@ -128,15 +131,18 @@ def process_with_ai(raw_text, model_name='llama3'):
         tags_list = parsed_json.get("tags", []) or []
         valid_tags = []
         
-        if tags_list and isinstance(tags_list, list):
-            # Filter only valid string tags and sanitize to kebab-case
-            for t in tags_list:
-                if t is not None:
-                    t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
-                    t_str = re.sub(r'[\s]+', '-', t_str)
-                    t_str = re.sub(r'-+', '-', t_str).strip('-')
-                    if t_str:
-                        valid_tags.append(t_str)
+        if tags_list:
+            if isinstance(tags_list, str):
+                tags_list = tags_list.split(',')
+            if isinstance(tags_list, list):
+                # Filter only valid string tags and sanitize to kebab-case
+                for t in tags_list:
+                    if t is not None:
+                        t_str = re.sub(r'[^a-zA-Z0-9\s-]', '', str(t)).strip().lower()
+                        t_str = re.sub(r'[\s]+', '-', t_str)
+                        t_str = re.sub(r'-+', '-', t_str).strip('-')
+                        if t_str:
+                            valid_tags.append(t_str)
             
         return rag_content, valid_tags
     except Exception as e:
@@ -245,21 +251,16 @@ def reconvert_directory(directory, use_llm_validation=False, model_name='llama3'
             
             if new_rag_content:
                 # Ekstrak title untuk disisipkan kembali
-                title = os.path.basename(file_path).replace('.md', '')
+                title = os.path.basename(file_path)[:-3] if file_path.endswith('.md') else os.path.basename(file_path)
                 
                 # Parse metadata to extract source_type and source_path
                 source_type = "Unknown"
                 source_path = "Unknown"
                 if metadata.startswith("---"):
-                    # Match quoted YAML values: source_type: "value" or source_type: value
-                    m_type = re.search(r'source_type:\s*"([^"]*)"', metadata)
-                    if not m_type:
-                        m_type = re.search(r'source_type:\s*(\S+)', metadata)
-                    if m_type: source_type = m_type.group(1)
-                    m_path = re.search(r'source_path:\s*"([^"]*)"', metadata)
-                    if not m_path:
-                        m_path = re.search(r'source_path:\s*(\S+)', metadata)
-                    if m_path: source_path = m_path.group(1)
+                    m_type = re.search(r'source_type:\s*"?([^"\n]+?)"?(?=\n|$)', metadata)
+                    if m_type: source_type = m_type.group(1).strip()
+                    m_path = re.search(r'source_path:\s*"?([^"\n]+?)"?(?=\n|$)', metadata)
+                    if m_path: source_path = m_path.group(1).strip()
                 else:
                     m_type = re.search(r'\*\*Source Type:\*\*\s*(.*)', metadata)
                     if m_type: source_type = m_type.group(1).strip()
